@@ -4,15 +4,16 @@ import { LivestreamProvider } from './livestream-provider'
 import { KinesisVideoMediaClient } from '@aws-sdk/client-kinesis-video-media'
 import { KinesisVideoClient } from '@aws-sdk/client-kinesis-video'
 import { kinesisVideo } from '@/shared/clients/kinesis-video'
-import { kinesisVideoMedia } from '@/shared/clients/kinesis-video-media'
+import { KinesisVideoSignalingClient } from '@aws-sdk/client-kinesis-video-signaling'
+import { kinesisVideoSignaling } from '@/shared/clients/kinesis-video-signaling'
 
 export class KinesisVideoProvider implements LivestreamProvider {
   private client: KinesisVideoClient
-  private mediaClient: KinesisVideoMediaClient
+  private signalingClient: KinesisVideoSignalingClient
 
   constructor() {
     this.client = kinesisVideo()
-    this.mediaClient = kinesisVideoMedia()
+    this.signalingClient = kinesisVideoSignaling()
   }
   async createChannel(channelName: string): Promise<void> {
     throw new Error('Method not implemented.')
