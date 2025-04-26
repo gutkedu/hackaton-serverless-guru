@@ -1,0 +1,34 @@
+{
+  "name": "my-lambda-function",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "npx tsc",
+    "lint": "eslint . --quiet",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sam:build": "sam build -t template.yaml",
+    "sam:validate": "sam validate --lint -t template.yaml"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.1"
+  },
+  "devDependencies": {
+    "@aws-lambda-powertools/logger": "^2.16.0",
+    "@aws-lambda-powertools/parameters": "^2.17.0",
+    "@aws-sdk/client-kinesis-video": "^3.796.0",
+    "@aws-sdk/client-kinesis-video-signaling": "^3.797.0",
+    "@aws-sdk/client-secrets-manager": "^3.777.0",
+    "@gomomento/sdk": "^1.110.3",
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "ksuid": "^3.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.1.1",
+    "zod": "^3.24.1"
+  }
+}

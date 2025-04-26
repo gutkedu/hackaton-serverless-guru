@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: URL Shortener Backend Stack
+
+Parameters:
+  Env:
+    Type: String
+    Default: dev
+    Description: Environment name (e.g., dev, prod)
+    AllowedValues:
+      - dev
+      - prod
+
+  MomentoCacheApiKey:
+    Type: String
+    NoEcho: true
+    Description: API Key for Momento Cache
+
+Resources:
+  ##########################################################################
+  #                              SecretsManager                            #
+  ##########################################################################
+  MomentoApiKeys:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: MOMENTO_API_KEYS
+      Description: Momento Cache API Key
+      SecretString: !Sub |
+        {"MOMENTO_CACHE_API_KEY": "${MomentoCacheApiKey}"}
+    Metadata:
+      Comment: This secret is used to store the Momento API Keys
+      Tags:
+        - Key: Name
+          Value: MOMENTO_API_KEY
+        - Key: Env
+          Value: !Ref Env

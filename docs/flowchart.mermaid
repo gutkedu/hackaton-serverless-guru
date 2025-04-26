@@ -1,0 +1,40 @@
+flowchart TD
+    subgraph Frontend
+        FE[React App]
+        FE -->|API Calls| API_Services
+        FE <-->|Momento SDK| Momento_Services
+        FE -->|Watch Streams| CF
+    end
+    
+    subgraph AWS_Components
+        subgraph API_Services
+            API[API Gateway]
+            Lambda[Lambda Functions]
+            SegmentIngester[Segment Ingestion API]
+        end
+        
+        subgraph Stream_Ingest_Processing
+            ML[AWS MediaLive]
+            ML -->|HLS Segments & Playlists| SegmentIngester
+        end
+        
+        subgraph Content_Delivery
+            CF[CloudFront]
+            API -->|Dynamic Manifests| CF
+            MC_API[Segment API]
+            MC_API -->|Cached Segments| CF
+        end
+    end
+    
+    subgraph Momento_Services
+        MC[Momento Cache]
+        MT[Momento Topics]
+        
+        SegmentIngester -->|"Store Segments"| MC
+        MC <-->|"Retrieve Segments"| MC_API
+        MC <-->|"Stream Metadata"| Lambda
+        MT <-->|"Chat & Events"| Lambda
+    end
+    
+    Streamer[Streamer] -->|RTMP Stream| ML
+    Viewers[Viewers] -->|Watch| FE

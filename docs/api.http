@@ -1,0 +1,22 @@
+@baseUrl=https://62j8h4cqs5.execute-api.us-east-1.amazonaws.com/dev/
+
+###
+
+POST {{baseUrl}}/channel/create
+Content-Type: application/json
+
+{
+  "name": "test",
+  "description": "test",
+  "type": "text",
+  "members": [
+    {
+      "userId": "user1"
+    },
+    {
+      "userId": "user2"
+    }
+  ]
+}
+
+###
