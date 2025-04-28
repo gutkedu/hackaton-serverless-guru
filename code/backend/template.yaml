@@ -3,13 +3,17 @@ Transform: AWS::Serverless-2016-10-31
 Description: URL Shortener Backend Stack
 
 Parameters:
-  Env:
+  TableName:
     Type: String
-    Default: dev
-    Description: Environment name (e.g., dev, prod)
-    AllowedValues:
-      - dev
-      - prod
+    Description: Name of the DynamoDB table
+
+  UserPoolId:
+    Type: String
+    Description: ID of the Cognito User Pool
+
+  UserPoolClientId:
+    Type: String
+    Description: ID of the Cognito User Pool Client
 
 Globals:
   Function:
@@ -22,7 +26,6 @@ Globals:
     Environment:
       Variables:
         NODE_OPTIONS: --enable-source-maps
-        ENV: !Ref Env
 
 Resources:
   ##########################################################################
@@ -96,7 +99,7 @@ Resources:
   ApiGateway:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: !Ref Env
+      StageName: api
       EndpointConfiguration:
         Type: REGIONAL
       Auth:
@@ -109,4 +112,4 @@ Resources:
 Outputs:
   ApiGatewayURL:
     Description: URL for the API Gateway
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Env}/
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/api/

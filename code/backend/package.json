@@ -16,6 +16,8 @@
   "devDependencies": {
     "@aws-lambda-powertools/logger": "^2.16.0",
     "@aws-lambda-powertools/parameters": "^2.17.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.798.0",
+    "@aws-sdk/client-eventbridge": "^3.798.0",
     "@aws-sdk/client-kinesis-video": "^3.796.0",
     "@aws-sdk/client-kinesis-video-signaling": "^3.797.0",
     "@aws-sdk/client-secrets-manager": "^3.777.0",

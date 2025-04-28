@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Stateful Resources Stack
+
+Parameters:
+  MomentoCacheApiKey:
+    Type: String
+    NoEcho: true
+    Description: API Key for Momento Cache
+    
+Resources:
+  ##########################################################################
+  #                              DynamoDB                                  #
+  ##########################################################################
+  DynamoDBApplication:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./dynamo.yaml
+      Parameters:
+        TableName: "DynamoDBTable"
+
+  ##########################################################################
+  #                              Cognito                                   #
+  ##########################################################################
+  CognitoApplication:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./cognito.yaml
+      Parameters:
+        AppName: "ApplicationName"
+        AppEventBusName: "AppEventBusName"
+
+  ##########################################################################
+  #                           Event Bridge                                 #
+  ##########################################################################
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: "AppEventBusName"
+
+  ##########################################################################
+  #                          SecretsManager                                #
+  ##########################################################################
+  SecretsManager:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ./secrets-manager.yaml
+      Parameters:
+        MomentoCacheApiKey: !Ref MomentoCacheApiKey
+
+Outputs:
+  TableName:
+    Description: Name of the DynamoDB table
+    Value: !GetAtt DynamoDBApplication.Outputs.TableName
+    Export:
+      Name: !Sub "StatefulStack-TableName"
+
+  TableArn:
+    Description: ARN of the DynamoDB table
+    Value: !GetAtt DynamoDBApplication.Outputs.TableArn
+    Export:
+      Name: !Sub "StatefulStack-TableArn"
+
+  UserPoolId:
+    Description: ID of the Cognito User Pool
+    Value: !GetAtt CognitoApplication.Outputs.UserPoolId
+    Export:
+      Name: !Sub "StatefulStack-UserPoolId"
+
+  UserPoolArn:
+    Description: ARN of the Cognito User Pool
+    Value: !GetAtt CognitoApplication.Outputs.UserPoolArn
+    Export:
+      Name: !Sub "StatefulStack-UserPoolArn"
+
+  UserPoolClientId:
+    Description: ID of the Cognito User Pool Client
+    Value: !GetAtt CognitoApplication.Outputs.UserPoolClientId
+    Export:
+      Name: !Sub "StatefulStack-UserPoolClientId"
+
+  IdentityPoolId:
+    Description: ID of the Cognito Identity Pool
+    Value: !GetAtt CognitoApplication.Outputs.IdentityPoolId
+    Export:
+      Name: !Sub "StatefulStack-IdentityPoolId"
+
+  EventBusName:
+    Description: Name of the Event Bus
+    Value: !Ref EventBus
+    Export:
+      Name: !Sub "StatefulStack-EventBusName"
+
+  EventBusArn:
+    Description: ARN of the Event Bus
+    Value: !GetAtt EventBus.Arn
+    Export:
+      Name: !Sub "StatefulStack-EventBusArn"
+
+  MomentoApiKeySecretArn:
+    Description: ARN of the Momento API Key Secret
+    Value: !GetAtt SecretsManager.Outputs.MomentoApiKeySecretArn
+    Export:
+      Name: !Sub "StatefulStack-MomentoApiKeySecretArn"

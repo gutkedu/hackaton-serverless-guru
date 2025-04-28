@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB Table with Partition Key and Sort Key
+
+Parameters:
+  TableName:
+    Type: String
+    Description: Name of the DynamoDB table
+    
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Ref TableName
+
+Outputs:
+  TableName:
+    Description: Name of the DynamoDB table
+    Value: !Ref DynamoDBTable
+  
+  TableArn:
+    Description: ARN of the DynamoDB table
+    Value: !GetAtt DynamoDBTable.Arn
