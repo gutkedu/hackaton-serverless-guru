@@ -1,25 +1,27 @@
 import { Item } from './item'
 import KSUID from 'ksuid'
 
-export interface StreamerProps {
+export interface LobbyProps {
   id?: string
   createdAt?: string
   updatedAt?: string
 }
 
-interface StreamerDynamoKeys {
-  pk: `STREAMER`
+interface LobbyDynamoKeys {
+  pk: `LOBBY`
   sk: `ID#${string}`
 }
 
-export interface StreamerDynamo extends StreamerProps, StreamerDynamoKeys {}
+export interface LobbyDynamo extends LobbyProps, LobbyDynamoKeys {}
 
-export class StreamerEntity extends Item<StreamerProps> {
-  get pk(): StreamerDynamoKeys['pk'] {
-    return `STREAMER`
+//TODO: add lobby props
+
+export class LobbyEntity extends Item<LobbyProps> {
+  get pk(): LobbyDynamoKeys['pk'] {
+    return `LOBBY`
   }
 
-  get sk(): StreamerDynamoKeys['sk'] {
+  get sk(): LobbyDynamoKeys['sk'] {
     return `ID#${this.props.id}`
   }
 
@@ -31,32 +33,32 @@ export class StreamerEntity extends Item<StreamerProps> {
     this.props.updatedAt = new Date().toISOString()
   }
 
-  getDynamoKeys(): StreamerDynamoKeys {
+  getDynamoKeys(): LobbyDynamoKeys {
     return {
       pk: this.pk,
       sk: this.sk
     }
   }
 
-  toDynamoItem(): StreamerDynamo {
+  toDynamoItem(): LobbyDynamo {
     return {
       ...this.getDynamoKeys(),
       ...this.props
     }
   }
 
-  toProps(): StreamerProps {
+  toProps(): LobbyProps {
     return {
       ...this.props
     }
   }
 
-  static fromDynamoItem(item: StreamerDynamo): StreamerEntity {
-    return new StreamerEntity(item)
+  static fromDynamoItem(item: LobbyDynamo): LobbyEntity {
+    return new LobbyEntity(item)
   }
 
-  static create(props: StreamerProps): StreamerEntity {
-    return new StreamerEntity({
+  static create(props: LobbyProps): LobbyEntity {
+    return new LobbyEntity({
       ...props,
       id: props.id ?? KSUID.randomSync().string,
       createdAt: new Date().toISOString(),

@@ -1,0 +1,25 @@
+{
+  "serverlessConsole.services": [
+    {
+      "type": "cloudformation",
+      "title": "backend",
+      "timeOffsetInMs": 0,
+      "awsProfile": "gutkedu-terraform",
+      "stacks": [
+        {
+          "region": "us-east-1",
+          "stackName": "hackaton-stateless-resources-BackendStackApplication-K8GPUI7870UF",
+          "stage": "dev"
+        }
+      ]
+    }
+  ],
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "version": "v1"
+    },
+    "dev": {
+      "baseUrl": "https://gz8ep2fj9g.execute-api.us-east-1.amazonaws.com/api"
+    }
+  }
+}

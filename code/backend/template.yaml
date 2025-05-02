@@ -17,7 +17,7 @@ Parameters:
 
 Globals:
   Function:
-    Timeout: 5
+    Timeout: 10
     MemorySize: 512
     Runtime: nodejs22.x
     CodeUri: .
@@ -26,6 +26,9 @@ Globals:
     Environment:
       Variables:
         NODE_OPTIONS: --enable-source-maps
+        USER_POOL_ID: !Ref UserPoolId
+        USER_POOL_CLIENT_ID: !Ref UserPoolClientId
+        TABLE_NAME: !Ref TableName
 
 Resources:
   ##########################################################################
@@ -47,12 +50,36 @@ Resources:
   ##########################################################################
   #                              Functions                                 #
   ##########################################################################
-  CreateStreamChannelFunction:
+  TokenAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: CreateStreamChannelFunction
-      Description: Creates a MediaLive stream channel
-      Handler: create-stream-channel.createStreamChannelHandler
+      FunctionName: TokenAuthorizerFunction
+      Description: Validates JWT tokens from Cognito for API Gateway
+      Handler: auth/authorizer.handler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Policies:
+        - AWSLambdaBasicExecutionRole
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/authorizer.ts
+        External:
+          - zod
+          - aws-jwt-verify
+          - '@aws-lambda-powertools/logger'
+
+  RefreshTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: RefreshTokenFunction
+      Description: Handles refresh token requests
+      Handler: refresh-token.refreshTokenHandler
       Layers:
         - !Ref NodejsDepsLayer
         - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
@@ -61,7 +88,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGateway
-            Path: /channel/create
+            Path: /auth/refresh-token
             Method: POST
       Policies:
         - AWSLambdaExecute 
@@ -69,14 +96,45 @@ Resources:
           Statement:
             - Effect: Allow
               Action:
-                - secretsmanager:GetSecretValue
-                - secretsmanager:DescribeSecret
-                - kinesisvideo:CreateStream
-                - kinesisvideo:CreateSignalingChannel
-                - kinesisvideo:GetSignalingChannelEndpoint
-                - kinesisvideo:GetIceServerConfig
-                - kinesisvideo:DescribeSignalingChannel
-                - kinesisvideo:DescribeStream
+                - cognito-idp:InitiateAuth
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/refresh-token.ts
+        External:
+          - zod
+          - '@aws-lambda-powertools/logger'
+          - '@aws-sdk/client-cognito-identity-provider'
+          
+  SignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SignupFunction
+      Description: Handles user signup requests
+      Handler: signup.signupHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/signup
+            Method: POST
+      Policies:
+        - AWSLambdaExecute 
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:SignUp
+                - events:PutEvents
               Resource: '*'
     Metadata:
       BuildMethod: esbuild
@@ -85,13 +143,159 @@ Resources:
         Target: es2020
         Sourcemap: true
         EntryPoints:
-          - src/lambdas/create-stream-channel.ts
+          - src/lambdas/auth/signup.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
-          - '@aws-lambda-powertools/parameters'
-          - '@aws-sdk/client-kinesis-video'
-          - '@aws-sdk/client-kinesis-video-signaling'
+          - '@aws-sdk/client-cognito-identity-provider'
+
+  SigninFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SigninFunction
+      Description: Handles user signin requests
+      Handler: signin.signinHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/signin
+            Method: POST
+      Policies:
+        - AWSLambdaExecute 
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:InitiateAuth
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/signin.ts
+        External:
+          - zod
+          - '@aws-lambda-powertools/logger'
+          - '@aws-sdk/client-cognito-identity-provider'
+
+  ConfirmSignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ConfirmSignupFunction
+      Description: Handles user confirmation requests
+      Handler: confirm-signup.confirmSignupHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/confirm-signup
+            Method: POST
+      Policies:
+        - AWSLambdaExecute 
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ConfirmSignUp
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/confirm-signup.ts
+        External:
+          - zod
+          - '@aws-lambda-powertools/logger'
+          - '@aws-sdk/client-cognito-identity-provider'
+
+  ForgotPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ForgotPasswordFunction
+      Description: Handles forgot password requests
+      Handler: forgot-password.forgotPasswordHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/forgot-password
+            Method: POST
+      Policies:
+        - AWSLambdaExecute 
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ForgotPassword
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/forgot-password.ts
+        External:
+          - zod
+          - '@aws-lambda-powertools/logger'
+          - '@aws-sdk/client-cognito-identity-provider'
+
+  ResetPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ResetPasswordFunction
+      Description: Handles password reset requests
+      Handler: reset-password.resetPasswordHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/reset-password
+            Method: POST
+      Policies:
+        - AWSLambdaExecute 
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ConfirmForgotPassword
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - src/lambdas/auth/reset-password.ts
+        External:
+          - zod
+          - '@aws-lambda-powertools/logger'
+          - '@aws-sdk/client-cognito-identity-provider'
 
   ##########################################################################
   #                              API Gateway                               #
@@ -103,7 +307,12 @@ Resources:
       EndpointConfiguration:
         Type: REGIONAL
       Auth:
-        DefaultAuthorizer: NONE
+        Authorizers:
+          TokenAuthorizer:
+            FunctionArn: !GetAtt TokenAuthorizerFunction.Arn
+            Identity:
+              Header: Authorization
+              ReauthorizeEvery: 300
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"

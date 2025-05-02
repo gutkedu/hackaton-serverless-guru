@@ -5,7 +5,7 @@ let loggerInstance: Logger | null = null
 export function getLogger(service?: string): Logger {
   if (!loggerInstance) {
     loggerInstance = new Logger({
-      serviceName: service ?? 'livestreaming-service'
+      serviceName: service ?? 'service'
     })
   }
   return loggerInstance

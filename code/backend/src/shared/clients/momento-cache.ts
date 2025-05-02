@@ -8,7 +8,7 @@ export const momentoCacheClient = async (apiKey: string): Promise<CacheClient> =
   }
   client = await CacheClient.create({
     defaultTtlSeconds: 3600,
-    configuration: Configurations.Laptop.v1(),
+    configuration: Configurations.Lambda.latest(),
     credentialProvider: CredentialProvider.fromString(apiKey)
   })
   return client
