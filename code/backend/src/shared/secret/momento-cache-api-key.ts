@@ -1,7 +1,7 @@
 import { getSecret } from '@aws-lambda-powertools/parameters/secrets'
-import { IntegrationError } from '../errors/integration-error'
-import { getLogger } from '../logger/get-logger'
-import { MomentoSecretsDTO } from './secrets-dto'
+import { IntegrationError } from '../errors/integration-error.js'
+import { getLogger } from '../logger/get-logger.js'
+import { MomentoSecretsDTO } from './secrets-dto.js'
 
 const logger = getLogger()
 

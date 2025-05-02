@@ -1,9 +1,9 @@
-import { momentoCacheClient } from '@/shared/clients/momento-cache'
-import { CacheProvider } from './cache-provider'
+import { momentoCacheClient } from '@/shared/clients/momento-cache.js'
+import { CacheProvider } from './cache-provider.js'
 import { CreateCacheResponse, DeleteCacheResponse, CacheSetResponse, CacheGetResponse } from '@gomomento/sdk'
-import { getLogger } from '@/shared/logger/get-logger'
-import { IntegrationError } from '@/shared/errors/integration-error'
-import { SetCacheKeyDTO, GetCacheKeyDTO } from './cache-dto'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { IntegrationError } from '@/shared/errors/integration-error.js'
+import { SetCacheKeyDTO, GetCacheKeyDTO } from './cache-dto.js'
 
 const logger = getLogger()
 

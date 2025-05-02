@@ -1,27 +1,27 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-
-import { getLogger } from '@/shared/logger/get-logger'
+import { APIGatewayProxyResult } from 'aws-lambda'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { CognitoProvider } from '@/providers/auth/cognito-provider.js'
 import { z } from 'zod'
-import { CognitoProvider } from '@/providers/auth/cognito-provider'
-import { handleApiGwError } from '@/shared/errors/handle-api-gw-error'
+import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
+import middy from '@middy/core'
+import { parser } from '@aws-lambda-powertools/parser/middleware'
+import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes'
 
-const logger = getLogger()
 const cognitoProvider = new CognitoProvider()
+const logger = getLogger()
 
-export const signinHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+const signinSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8)
+})
+
+type SigninSchema = z.infer<typeof signinSchema>
+
+const handler = async (event: SigninSchema): Promise<APIGatewayProxyResult> => {
   try {
-    logger.info('Signin request received', { event })
+    logger.info('Signin request received')
 
-    const body = JSON.parse(event.body || '{}')
-
-    const schema = z.object({
-      email: z.string().email(),
-      password: z.string().min(8)
-    })
-
-    const { email, password } = schema.parse(body)
-
-    const { accessToken, expiresIn, idToken, refreshToken } = await cognitoProvider.signIn(email, password)
+    const { accessToken, expiresIn, refreshToken } = await cognitoProvider.signIn(event.email, event.password)
 
     return {
       statusCode: 200,
@@ -32,7 +32,6 @@ export const signinHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       body: JSON.stringify({
         accessToken,
         expiresIn,
-        idToken,
         refreshToken
       })
     }
@@ -40,3 +39,15 @@ export const signinHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     return handleApiGwError(error, 'Error during signin')
   }
 }
+
+export const signinHandler = middy(handler)
+  .use(
+    parser({
+      schema: signinSchema,
+      envelope: ApiGatewayEnvelope
+    })
+  )
+  .onError((request) => {
+    const { error } = request
+    return handleApiGwError(error, 'Error')
+  })

@@ -1,25 +1,27 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { getLogger } from '@/shared/logger/get-logger'
-import { CognitoProvider } from '@/providers/auth/cognito-provider'
+import { APIGatewayProxyResult } from 'aws-lambda'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { CognitoProvider } from '@/providers/auth/cognito-provider.js'
 import { z } from 'zod'
-import { handleApiGwError } from '@/shared/errors/handle-api-gw-error'
+import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
+import middy from '@middy/core'
+import { parser } from '@aws-lambda-powertools/parser/middleware'
+import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes'
 
 const cognitoProvider = new CognitoProvider()
 const logger = getLogger()
 
-export const confirmSignupHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+const confirmSignupSchema = z.object({
+  email: z.string().email(),
+  confirmationCode: z.string()
+})
+
+type ConfirmSignupSchema = z.infer<typeof confirmSignupSchema>
+
+const handler = async (event: ConfirmSignupSchema): Promise<APIGatewayProxyResult> => {
   try {
-    logger.info('Confirm signup request received', { event })
+    logger.info('Confirm signup request received')
 
-    const schema = z.object({
-      email: z.string().email(),
-      confirmationCode: z.string()
-    })
-
-    const body = JSON.parse(event.body || '{}')
-    const { email, confirmationCode } = schema.parse(body)
-
-    await cognitoProvider.confirmSignUp(email, confirmationCode)
+    await cognitoProvider.confirmSignUp(event.email, event.confirmationCode)
 
     return {
       statusCode: 200,
@@ -35,3 +37,15 @@ export const confirmSignupHandler = async (event: APIGatewayProxyEvent): Promise
     return handleApiGwError(error, 'Error confirming user')
   }
 }
+
+export const confirmSignupHandler = middy(handler)
+  .use(
+    parser({
+      schema: confirmSignupSchema,
+      envelope: ApiGatewayEnvelope
+    })
+  )
+  .onError((request) => {
+    const { error } = request
+    return handleApiGwError(error, 'Error')
+  })

@@ -1,5 +1,5 @@
-import { getLogger } from '@/shared/logger/get-logger'
-import { AuthProvider, SignInResult, SignUpResult, RefreshTokenResult } from './auth-provider'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { AuthProvider, SignInResult, SignUpResult, RefreshTokenResult } from './auth-provider.js'
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
@@ -10,8 +10,8 @@ import {
   ConfirmForgotPasswordCommand,
   GetUserCommand
 } from '@aws-sdk/client-cognito-identity-provider'
-import { IntegrationError } from '@/shared/errors/integration-error'
-import { cognito } from '@/shared/clients/cognito-client'
+import { IntegrationError } from '@/shared/errors/integration-error.js'
+import { cognito } from '@/shared/clients/cognito-client.js'
 
 const logger = getLogger()
 

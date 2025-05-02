@@ -1,6 +1,6 @@
 import { APIGatewayTokenAuthorizerEvent, APIGatewayAuthorizerResult, Context } from 'aws-lambda'
 import { CognitoJwtVerifier } from 'aws-jwt-verify'
-import { getLogger } from '@/shared/logger/get-logger'
+import { getLogger } from '@/shared/logger/get-logger.js'
 
 const logger = getLogger('authorizer')
 

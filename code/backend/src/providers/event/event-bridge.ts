@@ -1,9 +1,9 @@
-import { getLogger } from '@/shared/logger/get-logger'
-import { EventProvider } from './event-provider'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { EventProvider } from './event-provider.js'
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge'
-import { eventBridge } from '@/shared/clients/event-bridge-client'
-import { IntegrationError } from '@/shared/errors/integration-error'
-import { eventSource, EventType } from './events-dto'
+import { eventBridge } from '@/shared/clients/event-bridge-client.js'
+import { IntegrationError } from '@/shared/errors/integration-error.js'
+import { eventSource, EventType } from './events-dto.js'
 
 const logger = getLogger()
 

@@ -65,8 +65,11 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/authorizer.ts
         External:
@@ -102,14 +105,18 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/refresh-token.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
           
   SignupFunction:
     Type: AWS::Serverless::Function
@@ -140,14 +147,19 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/signup.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
 
   SigninFunction:
     Type: AWS::Serverless::Function
@@ -177,14 +189,19 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/signin.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
 
   ConfirmSignupFunction:
     Type: AWS::Serverless::Function
@@ -214,14 +231,19 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/confirm-signup.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
 
   ForgotPasswordFunction:
     Type: AWS::Serverless::Function
@@ -251,14 +273,19 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/forgot-password.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
 
   ResetPasswordFunction:
     Type: AWS::Serverless::Function
@@ -288,14 +315,19 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
-        Target: es2020
+        Target: esnext
+        Format: esm
         Sourcemap: true
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/lambdas/auth/reset-password.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
 
   ##########################################################################
   #                              API Gateway                               #

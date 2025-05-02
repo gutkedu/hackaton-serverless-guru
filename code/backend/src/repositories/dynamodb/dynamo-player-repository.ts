@@ -1,9 +1,9 @@
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { PlayerRepository } from '../player-repository'
-import { dynamo } from '@/shared/clients/dynamo-client'
-import { PlayerEntity } from '@/entities/player'
-import { IntegrationError } from '@/shared/errors/integration-error'
-import { getLogger } from '@/shared/logger/get-logger'
+import { PlayerRepository } from '../player-repository.js'
+import { dynamo } from '@/shared/clients/dynamo-client.js'
+import { PlayerEntity } from '@/entities/player.js'
+import { IntegrationError } from '@/shared/errors/integration-error.js'
+import { getLogger } from '@/shared/logger/get-logger.js'
 
 const logger = getLogger()
 

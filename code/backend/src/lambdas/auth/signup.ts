@@ -1,27 +1,29 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { getLogger } from '@/shared/logger/get-logger'
+import { APIGatewayProxyResult } from 'aws-lambda'
+import { getLogger } from '@/shared/logger/get-logger.js'
 import { z } from 'zod'
-import { CognitoProvider } from '@/providers/auth/cognito-provider'
-import { handleApiGwError } from '@/shared/errors/handle-api-gw-error'
+import { CognitoProvider } from '@/providers/auth/cognito-provider.js'
+import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
+import middy from '@middy/core'
+import { parser } from '@aws-lambda-powertools/parser/middleware'
+import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes'
 
 const cognitoProvider = new CognitoProvider()
 const logger = getLogger()
 
-export const signupHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().optional()
+})
+
+type SignupSchema = z.infer<typeof signupSchema>
+
+const handler = async (event: SignupSchema): Promise<APIGatewayProxyResult> => {
   try {
-    logger.info('Signup request received', { event })
+    logger.info('Signup request received')
 
-    const schema = z.object({
-      email: z.string().email(),
-      password: z.string().min(8),
-      name: z.string().optional()
-    })
-
-    const body = JSON.parse(event.body || '{}')
-    const { email, password, name } = schema.parse(body)
-
-    const result = await cognitoProvider.signUp(email, password, {
-      name: name || email
+    const { userConfirmed, userSub } = await cognitoProvider.signUp(event.email, event.password, {
+      name: event.name || event.email
     })
 
     return {
@@ -32,11 +34,23 @@ export const signupHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       },
       body: JSON.stringify({
         message: 'User registration successful',
-        userConfirmed: result.userConfirmed,
-        userSub: result.userSub
+        userConfirmed,
+        userSub
       })
     }
   } catch (error) {
     return handleApiGwError(error, 'Error during signup')
   }
 }
+
+export const signupHandler = middy(handler)
+  .use(
+    parser({
+      schema: signupSchema,
+      envelope: ApiGatewayEnvelope
+    })
+  )
+  .onError((request) => {
+    const { error } = request
+    return handleApiGwError(error, 'Error')
+  })

@@ -1,24 +1,26 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { getLogger } from '@/shared/logger/get-logger'
-import { CognitoProvider } from '@/providers/auth/cognito-provider'
+import { APIGatewayProxyResult } from 'aws-lambda'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { CognitoProvider } from '@/providers/auth/cognito-provider.js'
 import { z } from 'zod'
-import { handleApiGwError } from '@/shared/errors/handle-api-gw-error'
+import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
+import middy from '@middy/core'
+import { parser } from '@aws-lambda-powertools/parser/middleware'
+import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes'
 
 const cognitoProvider = new CognitoProvider()
 const logger = getLogger()
 
-export const refreshTokenHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+const refreshTokenSchema = z.object({
+  refreshToken: z.string()
+})
+
+type RefreshTokenSchema = z.infer<typeof refreshTokenSchema>
+
+const handler = async (event: RefreshTokenSchema): Promise<APIGatewayProxyResult> => {
   try {
     logger.info('Refresh token request received')
 
-    const schema = z.object({
-      refreshToken: z.string()
-    })
-
-    const body = JSON.parse(event.body || '{}')
-    const { refreshToken } = schema.parse(body)
-
-    const result = await cognitoProvider.refreshToken(refreshToken)
+    const result = await cognitoProvider.refreshToken(event.refreshToken)
 
     return {
       statusCode: 200,
@@ -34,3 +36,15 @@ export const refreshTokenHandler = async (event: APIGatewayProxyEvent): Promise<
     return handleApiGwError(error, 'Error refreshing token')
   }
 }
+
+export const refreshTokenHandler = middy(handler)
+  .use(
+    parser({
+      schema: refreshTokenSchema,
+      envelope: ApiGatewayEnvelope
+    })
+  )
+  .onError((request) => {
+    const { error } = request
+    return handleApiGwError(error, 'Error')
+  })
