@@ -73,6 +73,7 @@ export class CognitoProvider implements AuthProvider {
       })
 
       await this.client.send(command)
+
       logger.info('User confirmation successful', { email })
     } catch (error) {
       logger.error('Error confirming user signup', { error, email })
@@ -84,6 +85,7 @@ export class CognitoProvider implements AuthProvider {
     try {
       const command = new InitiateAuthCommand({
         AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
+        UserContextData: {},
         ClientId: this.userPoolClientId,
         AuthParameters: {
           USERNAME: email,
@@ -91,14 +93,14 @@ export class CognitoProvider implements AuthProvider {
         }
       })
 
-      const result = await this.client.send(command)
+      const { AuthenticationResult } = await this.client.send(command)
       logger.info('User signed in successfully', { email })
 
       return {
-        idToken: result.AuthenticationResult?.IdToken,
-        accessToken: result.AuthenticationResult?.AccessToken,
-        refreshToken: result.AuthenticationResult?.RefreshToken,
-        expiresIn: result.AuthenticationResult?.ExpiresIn
+        idToken: AuthenticationResult?.IdToken,
+        accessToken: AuthenticationResult?.AccessToken,
+        refreshToken: AuthenticationResult?.RefreshToken,
+        expiresIn: AuthenticationResult?.ExpiresIn
       }
     } catch (error) {
       logger.error('Error signing in user', { error, email })

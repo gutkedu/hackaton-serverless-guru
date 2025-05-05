@@ -18,11 +18,15 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordSchema = z.infer<typeof resetPasswordSchema>
 
-const handler = async (event: ResetPasswordSchema): Promise<APIGatewayProxyResult> => {
+const handler = async ({
+  confirmationCode,
+  email,
+  newPassword
+}: ResetPasswordSchema): Promise<APIGatewayProxyResult> => {
   try {
     logger.info('Reset password request received')
 
-    await cognitoProvider.confirmForgotPassword(event.email, event.confirmationCode, event.newPassword)
+    await cognitoProvider.confirmForgotPassword(email, confirmationCode, newPassword)
 
     return {
       statusCode: 200,

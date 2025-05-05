@@ -1,4 +1,4 @@
-import { GetCacheKeyDTO, SetCacheKeyDTO } from './cache-dto'
+import { GetCacheKeyDTO, SetCacheKeyDTO } from './cache-dto.js'
 
 export interface CacheProvider {
   createCache(cacheName: string): Promise<void>

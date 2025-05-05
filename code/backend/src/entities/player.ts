@@ -1,20 +1,24 @@
-import { Item } from './item'
+import { Item } from './item.js'
 import KSUID from 'ksuid'
 
 export interface PlayerProps {
   id?: string
+  username: string
+  email: string
+  userConfirmed?: boolean
+  currentLobbyId?: string
   createdAt?: string
   updatedAt?: string
 }
 
 interface PlayerDynamoKeys {
   pk: `PLAYER`
-  sk: `ID#${string}`
+  sk: `USERNAME#${string}`
+  gsi1pk: `PLAYER`
+  gsi1sk: `EMAIL#${string}`
 }
 
 export interface PlayerDynamo extends PlayerProps, PlayerDynamoKeys {}
-
-//TODO: add player props
 
 export class PlayerEntity extends Item<PlayerProps> {
   get pk(): PlayerDynamoKeys['pk'] {
@@ -22,11 +26,45 @@ export class PlayerEntity extends Item<PlayerProps> {
   }
 
   get sk(): PlayerDynamoKeys['sk'] {
-    return `ID#${this.props.id}`
+    return `USERNAME#${this.props.username}`
+  }
+
+  get gsi1pk(): PlayerDynamoKeys['gsi1pk'] {
+    return `PLAYER`
+  }
+
+  get gsi1sk(): PlayerDynamoKeys['gsi1sk'] {
+    return `EMAIL#${this.email}`
   }
 
   get id(): string {
     return this.props.id as string
+  }
+
+  get username(): string {
+    return this.props.username
+  }
+
+  get email(): string {
+    return this.props.email
+  }
+
+  get userConfirmed(): boolean {
+    return this.props.userConfirmed ?? false
+  }
+
+  set userConfirmed(userConfirmed: boolean) {
+    this.props.userConfirmed = userConfirmed
+    this.touch()
+  }
+
+  get currentLobbyId(): string | undefined {
+    return this.props.currentLobbyId
+  }
+
+  setCurrentLobby(lobbyId: string | undefined) {
+    this.props.currentLobbyId = lobbyId
+    this.touch()
   }
 
   touch() {
@@ -36,20 +74,32 @@ export class PlayerEntity extends Item<PlayerProps> {
   getDynamoKeys(): PlayerDynamoKeys {
     return {
       pk: this.pk,
-      sk: this.sk
+      sk: this.sk,
+      gsi1pk: this.gsi1pk,
+      gsi1sk: this.gsi1sk
     }
   }
 
   toDynamoItem(): PlayerDynamo {
-    return {
+    const item: PlayerDynamo = {
       ...this.getDynamoKeys(),
       ...this.props
     }
+
+    return item
   }
 
   toProps(): PlayerProps {
     return {
       ...this.props
+    }
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      username: this.username,
+      currentLobbyId: this.currentLobbyId
     }
   }
 
@@ -60,6 +110,7 @@ export class PlayerEntity extends Item<PlayerProps> {
   static create(props: PlayerProps): PlayerEntity {
     return new PlayerEntity({
       ...props,
+      userConfirmed: props.userConfirmed ?? false,
       id: props.id ?? KSUID.randomSync().string,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

@@ -1,0 +1,51 @@
+@url={{baseUrl}}
+@contentType = application/json
+@authToken = {{signin.response.body.accessToken}}
+
+### Sign in to get token
+# @name signin
+POST {{url}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+  "email": "vaboxe9310@harinv.com",
+  "password": "Senha123!"
+}
+
+### Create new lobby
+POST {{url}}/game/lobbies/create
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "name": "Test Lobby",
+  "maxPlayers": 4
+}
+
+### List all lobbies
+GET {{url}}/game/lobbies
+Authorization: Bearer {{authToken}}
+
+### List lobbies with pagination
+GET {{url}}/game/lobbies?limit=5&nextToken=eyJwayI6IkxPQkJZIn0=
+Authorization: Bearer {{authToken}}
+
+### Get lobby details
+GET {{url}}/game/lobbies/2wePmhojsFEwdYPxEIyWg3zqPQK
+Authorization: Bearer {{authToken}}
+
+### Join lobby
+POST {{url}}/game/lobbies/join
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "lobbyId": "2NqvDLzdg5ThbAk6enzMrbtMq8S"
+}
+
+### Leave lobby
+POST {{url}}/game/lobbies/leave
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{}

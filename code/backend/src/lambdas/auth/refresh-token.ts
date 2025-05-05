@@ -16,11 +16,11 @@ const refreshTokenSchema = z.object({
 
 type RefreshTokenSchema = z.infer<typeof refreshTokenSchema>
 
-const handler = async (event: RefreshTokenSchema): Promise<APIGatewayProxyResult> => {
+const handler = async ({ refreshToken }: RefreshTokenSchema): Promise<APIGatewayProxyResult> => {
   try {
     logger.info('Refresh token request received')
 
-    const result = await cognitoProvider.refreshToken(event.refreshToken)
+    const { accessToken } = await cognitoProvider.refreshToken(refreshToken)
 
     return {
       statusCode: 200,
@@ -29,7 +29,7 @@ const handler = async (event: RefreshTokenSchema): Promise<APIGatewayProxyResult
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        tokens: result
+        accessToken
       })
     }
   } catch (error) {

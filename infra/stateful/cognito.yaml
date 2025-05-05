@@ -58,10 +58,6 @@ Resources:
         RecoveryMechanisms:
           - Name: verified_email
             Priority: 1
-      # LambdaConfig:
-      #   PreSignUp: !GetAtt PreSignUpLambdaFunction.Arn
-      #   PostConfirmation: !GetAtt PostConfirmationLambdaFunction.Arn
-      #   PostAuthentication: !GetAtt PostAuthenticationLambdaFunction.Arn
 
   # Cognito User Pool Client
   UserPoolClient:
@@ -75,6 +71,14 @@ Resources:
         - ALLOW_REFRESH_TOKEN_AUTH
         - ALLOW_USER_SRP_AUTH
       PreventUserExistenceErrors: ENABLED
+      # Add token expiration settings
+      AccessTokenValidity: 30    
+      IdTokenValidity: 30         
+      RefreshTokenValidity: 1    
+      TokenValidityUnits:
+        AccessToken: 'minutes' # Can be 'seconds', 'minutes', 'hours' or 'days'
+        IdToken: 'minutes'         
+        RefreshToken: 'days'      
 
   # Cognito Identity Pool (for integrating with other AWS Services)
   IdentityPool:

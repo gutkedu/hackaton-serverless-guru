@@ -1,0 +1,56 @@
+@url={{baseUrl}}
+@contentType = application/json
+
+### Sign Up
+POST {{url}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "vaboxe9310@harinv.com",
+  "password": "Senha123!",
+  "username": "vaboxe9310"
+}
+
+### Confirm Sign Up
+POST {{url}}/auth/confirm-signup
+Content-Type: application/json
+
+{
+  "email": "vaboxe9310@harinv.com",
+  "confirmationCode": "572198"
+}
+
+### Sign In
+POST {{url}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "vaboxe9310@harinv.com",
+  "password": "Senha123!"
+}
+
+### Refresh Token
+POST {{url}}/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.wQO5s_oMBH4SLPnCyHWpakRylj_BmMz2NoT_bQ3FNrLIKwCkD98ItbCHfzVjivCULXfY516R2ataQuuyaEIaBjW2otfXPSQZbMLwnAfkqnGXoRGur-1myVFmwgEgePWYzEymM9ikQGgL1L-PW7kd3PoHJO19srhxy2OHyk6Mxi9C88GdRdHokdk7zXPG6fxPGFCuU3vC6xIivG8rK9tvVvGcu_KlC-pYjNnHKLj7dzh3Acn5dr2YaALAWLRZPlNbhKygPUmrVFE7mVoDzPstlv07QWlIbHSGN2jI7f2jg3_zLu2TLw8Hm9WGyU0s6HCUuZghyEv0Cg52OFNjPk6AiQ.kKxvosiux0127qwf.Eu9wKIbnSJQm8lMlQKziyIky8om-t6PoBj_P6ssZcVh0yiCHho8FyGI2I8n188mefYKpOgh6Uwl78tYevhzoi3qqD8Tre2uLJAKCZxafuah4jQFTs0BOPh5B8qRXliInBOcGfI3Y6Iiu-6eCZzIQtpNMtDo5ZkMgYOxlv0-YqBpmLsU0y2O5MWPadUOWbzocp0jG93uzvA4DGy2ZS02YTpEKlbx_NPBnmKK4zgA_dlAn9qEOtH4fDfUp1c7VvAEyIo6NNxxP8QkHgT__h1IekcFXgFNpL6r9C_fhJIdPgh1YHph-kIGjZncGnAAvqcAscwTsiXBcjw3TjHZROw4pv89FDXFjD_dMziW3Yr6FVnZT9EI6Pq5HW7Ij31-XQ7__U0vN3MsF9EGNsb0SaP7RJ6g3ew0piaRVXg1xVgsctY4f4H0jFI-Ad41XTFmVfL6zjb0VZFISnPq93fYUiiBshvdWmiVPWHcuDyWOH513MfXoZ-rE9fq7BHOoJg1AEedlIBjnJcBdOY9QuPYh24xSjpddsvMRP35vFaN48UEH3R072SVPOhuRAhB8FP6WFD8xu_FQ4pcSTTW0Ya-kECm3LOwsC0ONSe-LPXFmjrog9-4JYYH3F0WaFGo5L4q78yDGlpYyYixRfuZj1pFjNmykAUK46hnu9hnqOi39VqV-t-pZm-7wyu2PJcXYKbqWGKjHd8A3XX_gPbDMmgJG2_P1bMncuFipXBEIoriif_46FYGhiOfvKALAyRNs_QydZaAZ58gXKY_jEkjHS1rNyqGqibDKMW_s1AWLRp66E_Wdw34_Cxu8NnnKsFSotCgABrnHyd8UmkhGVS8f-3xuoGCtDi6Rz5JuHXG3j581PYG303ga57TSpfDGzm1ivdcu2nqyYrjZ6IHduNH8iRC5VC07m-nGiRHjocxC8zMoU38eP66hpBeZff0GCZt8LUbCrCIAksKZkj1aTXUYfaSOHStWcZxG7KgYaI4sewpzFsLdap2yE9XvlURnG8BrTBcalp6O-CZjFxZVsxO2Dl3fBaZgrX3_C45-B-LekvIHqplYu7VYOAFZ_ovhPV1dNYxvkexH1b_YuAnYrWdSTWAFLf65JBSruDm-12IAboNPJOBJbmzoGo_YT1tYyqq-IetMX6ZQnbPXdGN7c0rUJGpwQdShkUxOb07bkRrdvA4Ti3tP2MURH7YZAFZ3fBqCmcWQjDwgMfA3VAAaUQrSsbVbU31iGCoKvO9l-JMkWbPrx4ET7l-FYEbfjdlPRJRMXNGiUKx4VAZuUDaq1nZUjTY948zle-3fTLken5QtbFaLKVdDAKqOx2UOHrptZKM39Q.lC00tnLHEgX_tQ9uH9uJhw"
+}
+
+### Forgot Password
+POST {{url}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "eduardo.pedogutkoski@gmail.com"
+}
+
+### Reset Password
+POST {{url}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "eduardo.pedogutkoski@gmail.com",
+  "confirmationCode": "708886",
+  "newPassword": "Password123!"
+}

@@ -106,6 +106,7 @@ Resources:
       BuildProperties:
         Minify: true
         Target: esnext
+        Format: esm
         Sourcemap: true
         OutExtension:
           - .js=.mjs
@@ -118,12 +119,12 @@ Resources:
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
           
-  SignupFunction:
+  SignUpPlayerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: SignupFunction
+      FunctionName: SignUpPlayerFunction
       Description: Handles user signup requests
-      Handler: signup.signupHandler
+      Handler: signup-player.signUpPlayerHandler
       Layers:
         - !Ref NodejsDepsLayer
         - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
@@ -143,6 +144,14 @@ Resources:
                 - cognito-idp:SignUp
                 - events:PutEvents
               Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -153,13 +162,17 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/signup.ts
+          - src/lambdas/auth/signup-player.ts
         External:
-          - zod
-          - '@aws-lambda-powertools/logger'
-          - '@aws-sdk/client-cognito-identity-provider'
+          - 'ksuid'
+          - 'zod'
           - '@aws-lambda-powertools/parser'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/secrets-manager'
           - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+          - '@aws-sdk/client-cognito-identity-provider'
 
   SigninFunction:
     Type: AWS::Serverless::Function
@@ -227,6 +240,8 @@ Resources:
               Action:
                 - cognito-idp:ConfirmSignUp
               Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -239,11 +254,14 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/confirm-signup.ts
         External:
-          - zod
+          - 'zod'
+          - 'ksuid'
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
 
   ForgotPasswordFunction:
     Type: AWS::Serverless::Function
@@ -274,7 +292,6 @@ Resources:
       BuildProperties:
         Minify: true
         Target: esnext
-        Format: esm
         Sourcemap: true
         OutExtension:
           - .js=.mjs
@@ -323,11 +340,220 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/reset-password.ts
         External:
-          - zod
+          - 'zod'
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
+
+  ##########################################################################
+  #                          Game Functions                                #
+  ##########################################################################
+  CreateLobbyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CreateLobbyFunction
+      Description: Handles creating new game lobbies
+      Handler: game/create-lobby.createLobbyHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/lobbies/create
+            Method: POST
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/create-lobby.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
+  ListLobbiesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ListLobbiesFunction
+      Description: Handles listing available game lobbies
+      Handler: game/list-lobbies.listLobbiesHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/lobbies
+            Method: GET
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/list-lobbies.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
+  GetLobbyDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetLobbyDetailsFunction
+      Description: Handles getting details for a specific lobby
+      Handler: game/get-lobby-details.getLobbyDetailsHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/lobbies/{id}
+            Method: GET
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/get-lobby-details.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
+  JoinLobbyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: JoinLobbyFunction
+      Description: Handles player joining a lobby
+      Handler: game/join-lobby.joinLobbyHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/lobbies/join
+            Method: POST
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/join-lobby.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
+  LeaveLobbyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: LeaveLobbyFunction
+      Description: Handles player leaving a lobby
+      Handler: game/leave-lobby.leaveLobbyHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/lobbies/leave
+            Method: POST
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/leave-lobby.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
 
   ##########################################################################
   #                              API Gateway                               #
@@ -344,7 +570,7 @@ Resources:
             FunctionArn: !GetAtt TokenAuthorizerFunction.Arn
             Identity:
               Header: Authorization
-              ReauthorizeEvery: 300
+              ReauthorizeEvery: 1800
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"

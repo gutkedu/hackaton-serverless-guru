@@ -12,6 +12,13 @@
           "stage": "dev"
         }
       ]
+    },
+    {
+      "type": "dynamodb",
+      "title": "DynamoDBTable",
+      "tableName": "DynamoDBTable",
+      "awsProfile": "gutkedu-terraform",
+      "region": "us-east-1"
     }
   ],
   "rest-client.environmentVariables": {

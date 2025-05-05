@@ -17,11 +17,11 @@ const signinSchema = z.object({
 
 type SigninSchema = z.infer<typeof signinSchema>
 
-const handler = async (event: SigninSchema): Promise<APIGatewayProxyResult> => {
+const handler = async ({ email, password }: SigninSchema): Promise<APIGatewayProxyResult> => {
   try {
     logger.info('Signin request received')
 
-    const { accessToken, expiresIn, refreshToken } = await cognitoProvider.signIn(event.email, event.password)
+    const { idToken, expiresIn, refreshToken } = await cognitoProvider.signIn(email, password)
 
     return {
       statusCode: 200,
@@ -30,7 +30,7 @@ const handler = async (event: SigninSchema): Promise<APIGatewayProxyResult> => {
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        accessToken,
+        accessToken: idToken,
         expiresIn,
         refreshToken
       })

@@ -20,7 +20,7 @@ export const handler = async (
     if (!verifier) {
       verifier = CognitoJwtVerifier.create({
         userPoolId: process.env.USER_POOL_ID!,
-        tokenUse: 'access',
+        tokenUse: 'id',
         clientId: process.env.USER_POOL_CLIENT_ID!
       })
     }
@@ -35,13 +35,14 @@ export const handler = async (
 
     const claims = await verifier.verify(jwtWithoutBearer)
 
-    logger.info('Token verified successfully', {
-      subject: claims.sub,
-      tokenUse: claims.token_use,
-      scope: claims.scope
-    })
+    // Extract the API Gateway ARN components
+    const apiGatewayArnParts = event.methodArn.split(':')
+    const awsAccountId = apiGatewayArnParts[4]
+    const apiGatewayArnWithoutMethod = apiGatewayArnParts[5].split('/')
+    const apiId = apiGatewayArnWithoutMethod[0]
+    const stage = apiGatewayArnWithoutMethod[1]
 
-    return {
+    const response: APIGatewayAuthorizerResult = {
       principalId: claims.sub,
       policyDocument: {
         Version: '2012-10-17',
@@ -49,16 +50,21 @@ export const handler = async (
           {
             Action: 'execute-api:Invoke',
             Effect: 'Allow',
-            Resource: event.methodArn
+            Resource: `arn:aws:execute-api:*:${awsAccountId}:${apiId}/${stage}/*`
           }
         ]
       },
       context: {
         userId: claims.sub,
         email: claims.email as string,
+        username: claims.preferred_username as string,
         scope: claims.scope as string
       }
     }
+
+    logger.info('Authorization successful', { response })
+
+    return response
   } catch (err) {
     logger.error('Authorization failed', { error: err })
     throw new Error('Unauthorized')

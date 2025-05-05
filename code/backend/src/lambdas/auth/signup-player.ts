@@ -1,29 +1,38 @@
 import { APIGatewayProxyResult } from 'aws-lambda'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { z } from 'zod'
-import { CognitoProvider } from '@/providers/auth/cognito-provider.js'
 import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
 import middy from '@middy/core'
 import { parser } from '@aws-lambda-powertools/parser/middleware'
 import { ApiGatewayEnvelope } from '@aws-lambda-powertools/parser/envelopes'
+import { makeSignUpPlayerUseCase } from '@/use-cases/factories/make-signup-player.js'
 
-const cognitoProvider = new CognitoProvider()
+const signUpPlayer = makeSignUpPlayerUseCase()
 const logger = getLogger()
 
-const signupSchema = z.object({
+export const signUpPlayerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  name: z.string().optional()
+  username: z
+    .string()
+    .nonempty()
+    .regex(/^[a-zA-Z0-9]+$/)
 })
 
-type SignupSchema = z.infer<typeof signupSchema>
+type SignUpPlayerSchema = z.infer<typeof signUpPlayerSchema>
 
-const handler = async (event: SignupSchema): Promise<APIGatewayProxyResult> => {
+const handler = async (event: SignUpPlayerSchema): Promise<APIGatewayProxyResult> => {
   try {
-    logger.info('Signup request received')
+    logger.info('signUpPlayer request received', {
+      event
+    })
 
-    const { userConfirmed, userSub } = await cognitoProvider.signUp(event.email, event.password, {
-      name: event.name || event.email
+    const { email, password, username } = event
+
+    const response = await signUpPlayer.execute({
+      email,
+      password,
+      username
     })
 
     return {
@@ -33,20 +42,18 @@ const handler = async (event: SignupSchema): Promise<APIGatewayProxyResult> => {
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        message: 'User registration successful',
-        userConfirmed,
-        userSub
+        response
       })
     }
   } catch (error) {
-    return handleApiGwError(error, 'Error during signup')
+    return handleApiGwError(error, 'Error during signUpPlayer')
   }
 }
 
-export const signupHandler = middy(handler)
+export const signUpPlayerHandler = middy(handler)
   .use(
     parser({
-      schema: signupSchema,
+      schema: signUpPlayerSchema,
       envelope: ApiGatewayEnvelope
     })
   )

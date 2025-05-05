@@ -20,7 +20,7 @@ export function handleApiGwError(error: any, defaultMessage: string, defaultStat
       statusCode: 400,
       headers,
       body: JSON.stringify({
-        error: 'Validation error',
+        error: 'Parse error',
         details: error.errors
       })
     }
