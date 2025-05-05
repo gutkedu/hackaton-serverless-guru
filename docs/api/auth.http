@@ -1,5 +1,20 @@
 @url={{baseUrl}}
 @contentType = application/json
+@authToken = {{signin.response.body.accessToken}}
+
+### Sign in to get token
+# @name signin
+POST {{url}}/auth/signin
+Content-Type: application/json
+
+{
+  "email": "vaboxe9310@harinv.com",
+  "password": "Senha123!"
+}
+
+### Get Topics Token
+GET {{url}}/auth/topics-token
+Authorization: Bearer {{signin.response.body.accessToken}}
 
 ### Sign Up
 POST {{url}}/auth/signup
@@ -20,14 +35,6 @@ Content-Type: application/json
   "confirmationCode": "572198"
 }
 
-### Sign In
-POST {{url}}/auth/signin
-Content-Type: application/json
-
-{
-  "email": "vaboxe9310@harinv.com",
-  "password": "Senha123!"
-}
 
 ### Refresh Token
 POST {{url}}/auth/refresh-token

@@ -346,6 +346,51 @@ Resources:
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
 
+  GetTopicsTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetTopicsTokenFunction
+      Description: Handles generating disposable tokens for Momento Topics
+      Handler: get-topics-token.getTopicsTokenHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /auth/topics-token
+            Method: GET
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/auth/get-topics-token.ts
+        External:
+          - 'zod'
+          - '@aws-lambda-powertools/logger'
+          - '@aws-lambda-powertools/parser'
+          - '@middy/core'
+          - '@middy/secrets-manager'
+          - '@gomomento/sdk'
+
   ##########################################################################
   #                          Game Functions                                #
   ##########################################################################
