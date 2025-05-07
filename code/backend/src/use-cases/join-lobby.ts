@@ -1,4 +1,4 @@
-import { LobbyStatus } from '@/entities/lobby.js'
+import { LobbyStatus } from '@/core/entities/lobby.js'
 import { LobbyRepository } from '@/repositories/lobby-repository.js'
 import { PlayerRepository } from '@/repositories/player-repository.js'
 import { BusinessError } from '@/shared/errors/business-error.js'

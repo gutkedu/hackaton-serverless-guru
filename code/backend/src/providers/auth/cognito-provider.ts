@@ -1,5 +1,4 @@
 import { getLogger } from '@/shared/logger/get-logger.js'
-import { AuthProvider, SignInResult, SignUpResult, RefreshTokenResult } from './auth-provider.js'
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
@@ -12,6 +11,8 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
 import { cognito } from '@/shared/clients/cognito-client.js'
+import { AuthProvider } from './auth-provider.js'
+import { SignUpResult, SignInResult, RefreshTokenResult } from './auth-dtos.js'
 
 const logger = getLogger()
 
@@ -151,7 +152,6 @@ export class CognitoProvider implements AuthProvider {
 
       const result = await this.client.send(command)
 
-      // Convert UserAttributes array to an object for easier access
       const attributes =
         result.UserAttributes?.reduce((acc, attr) => {
           if (attr.Name && attr.Value) {

@@ -1,4 +1,4 @@
-import { LobbyStatus, LobbyEntity } from '@/entities/lobby.js'
+import { LobbyStatus, LobbyEntity } from '@/core/entities/lobby.js'
 import { LobbyRepository } from '@/repositories/lobby-repository.js'
 
 interface ListLobbiesRequest {

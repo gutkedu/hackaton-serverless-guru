@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/lib-dynamodb'
 import { LobbyRepository, ListLobbiesOptions, ListLobbiesResult } from '../lobby-repository.js'
 import { dynamo } from '@/shared/clients/dynamo-client.js'
-import { LobbyDynamo, LobbyEntity, LobbyStatus } from '@/entities/lobby.js'
+import { LobbyDynamo, LobbyEntity, LobbyStatus } from '@/core/entities/lobby.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
 import { getLogger } from '@/shared/logger/get-logger.js'
 

@@ -1,7 +1,7 @@
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { PlayerRepository } from '../player-repository.js'
 import { dynamo } from '@/shared/clients/dynamo-client.js'
-import { PlayerDynamo, PlayerEntity } from '@/entities/player.js'
+import { PlayerDynamo, PlayerEntity } from '@/core/entities/player.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
 import { getLogger } from '@/shared/logger/get-logger.js'
 

@@ -1,5 +1,5 @@
-import { LobbyEntity } from '@/entities/lobby.js'
-import { PlayerEntity } from '@/entities/player.js'
+import { LobbyEntity } from '@/core/entities/lobby.js'
+import { PlayerEntity } from '@/core/entities/player.js'
 import { LobbyRepository } from '@/repositories/lobby-repository.js'
 import { PlayerRepository } from '@/repositories/player-repository.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'

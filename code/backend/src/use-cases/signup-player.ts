@@ -1,4 +1,4 @@
-import { PlayerEntity } from '@/entities/player.js'
+import { PlayerEntity } from '@/core/entities/player.js'
 import { AuthProvider } from '@/providers/auth/auth-provider.js'
 import { PlayerRepository } from '@/repositories/player-repository.js'
 

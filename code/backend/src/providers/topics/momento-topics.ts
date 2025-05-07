@@ -1,44 +1,35 @@
-import { AuthClient, DisposableTokenScopes, ExpiresIn, GenerateDisposableTokenResponse } from '@gomomento/sdk'
 import { TopicsProvider } from './topics-provider.js'
-import { momentoAuthClient } from '@/shared/clients/momento-auth.js'
-import { GenerateDisposableTopicsAuthTokenResponse } from './topics-dto.js'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
+import { momentoTopicClient } from '@/shared/clients/momento-topic.js'
+import { TopicClient, TopicPublishResponse } from '@gomomento/sdk'
 
 const logger = getLogger()
 
 export class MomentoTopicsProvider implements TopicsProvider {
   private apiKey: string
-  private authClient: AuthClient
+  private topicClient: TopicClient
   private topicsCacheName: string
 
   constructor(apiKey: string, cacheName: string) {
     this.apiKey = apiKey
     this.topicsCacheName = cacheName
-    this.authClient = momentoAuthClient(this.apiKey)
+    this.topicClient = momentoTopicClient(this.apiKey)
   }
-
-  async generateDisposableTopicsAuthToken(): Promise<GenerateDisposableTopicsAuthTokenResponse> {
+  async publish(topic: string, message: string): Promise<void> {
     try {
-      const result = await this.authClient.generateDisposableToken(
-        DisposableTokenScopes.topicPublishSubscribe('momento-cache', 'all-topics'),
-        ExpiresIn.minutes(30)
-      )
+      const result = await this.topicClient.publish(this.topicsCacheName, topic, message)
       switch (result.type) {
-        case GenerateDisposableTokenResponse.Success:
-          return {
-            endpoint: result.endpoint,
-            token: result.authToken,
-            cacheName: this.topicsCacheName,
-            expiresAt: new Date(result.expiresAt.epoch() * 1000)
-          }
-        case GenerateDisposableTokenResponse.Error:
-          logger.error('Error generating disposable token', { error: result })
-          throw new Error('Error generating disposable token')
+        case TopicPublishResponse.Success:
+          logger.info('Message published successfully', { topic, message })
+          break
+        case TopicPublishResponse.Error:
+          logger.error('Error publishing message to Momento Topics', { error: result })
+          throw new IntegrationError('Error publishing message to Momento Topics')
       }
     } catch (error) {
-      logger.error('Error generating disposable token', { error })
-      throw new IntegrationError('Error generating disposable token')
+      logger.error('Error publishing message to Momento Topics', { error })
+      throw new IntegrationError('Error publishing message to Momento Topics')
     }
   }
 }

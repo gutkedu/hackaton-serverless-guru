@@ -1,5 +1,3 @@
-import { GenerateDisposableTopicsAuthTokenResponse } from './topics-dto.js'
-
 export interface TopicsProvider {
-  generateDisposableTopicsAuthToken(): Promise<GenerateDisposableTopicsAuthTokenResponse>
+  publish(topic: string, message: string): Promise<void>
 }

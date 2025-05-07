@@ -1,4 +1,4 @@
-import { LobbyEntity, LobbyStatus } from '@/entities/lobby.js'
+import { LobbyEntity, LobbyStatus } from '@/core/entities/lobby.js'
 
 export interface ListLobbiesOptions {
   status?: LobbyStatus

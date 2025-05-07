@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
 import { makeListLobbiesUseCase } from '@/use-cases/factories/make-list-lobbies.js'
-import { LobbyStatus } from '@/entities/lobby.js'
+import { LobbyStatus } from '@/core/entities/lobby.js'
 import middy from '@middy/core'
 
 const logger = getLogger()
