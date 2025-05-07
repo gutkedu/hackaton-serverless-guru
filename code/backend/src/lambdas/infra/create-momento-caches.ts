@@ -5,6 +5,7 @@ import secretsManager from '@middy/secrets-manager'
 import { MiddyContext } from '@/shared/middy/middy-context.js'
 import { MomentoCache } from '@/providers/cache/momento-cache.js'
 import { AvailableMomentoCaches } from '@/core/enums/momento-caches.js'
+import { SECRET_MANAGER_MOMENTO_KEYS } from '@/core/constants/secret-manager-keys.js'
 
 const logger = getLogger()
 
@@ -23,23 +24,12 @@ const handler = async (event: void, context: MiddyContext): Promise<void> => {
     }
   })
 
-  let createdCaches = 0
-
   for (const { cacheName } of allCaches) {
-    const cache = await cacheProvider.get({
-      cacheName,
-      key: cacheName
-    })
-    if (cache) {
-      logger.info(`Cache ${cacheName} already exists`)
-      continue
-    }
     logger.info(`Creating cache ${cacheName}`)
     await cacheProvider.createCache(cacheName)
-    createdCaches++
   }
 
-  logger.info(`Created ${createdCaches} caches`)
+  logger.info('Finished creating caches')
 }
 
 export const createMomentoCaches = middy(handler)
@@ -48,7 +38,7 @@ export const createMomentoCaches = middy(handler)
       cacheExpiry: 10 * 60 * 1000,
       cacheKey: 'momento-api-keys',
       fetchData: {
-        momentoApiKeys: 'MOMENTO_API_KEYS'
+        momentoApiKeys: SECRET_MANAGER_MOMENTO_KEYS
       },
       awsClientOptions: {
         region: process.env.AWS_REGION

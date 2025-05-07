@@ -601,6 +601,44 @@ Resources:
           - '@aws-sdk/client-dynamodb'
 
   ##########################################################################
+  #                           Infra Functions                              #
+  ##########################################################################
+  CreateMomentoCachesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CreateMomentoCachesFunction
+      Description: Creates required Momento caches on deployment
+      Handler: infra/create-momento-caches.createMomentoCaches
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/infra/create-momento-caches.ts
+        External:
+          - 'zod'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/secrets-manager'
+          - '@middy/core'
+          - '@gomomento/sdk'
+
+  ##########################################################################
   #                              API Gateway                               #
   ##########################################################################
   ApiGateway:
@@ -625,3 +663,7 @@ Outputs:
   ApiGatewayURL:
     Description: URL for the API Gateway
     Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/api/
+
+  CreateMomentoCachesArn:
+    Description: ARN of the CreateMomentoCachesFunction
+    Value: !GetAtt CreateMomentoCachesFunction.Arn

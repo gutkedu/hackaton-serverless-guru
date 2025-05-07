@@ -9,6 +9,7 @@ import { parser } from '@aws-lambda-powertools/parser/middleware'
 import { z } from 'zod'
 import { ClientTopicContexts } from '@/core/enums/topic-contexts.js'
 import { topicContextToCacheMapper } from '@/shared/mappers/topic-contexts-to-caches.js'
+import { SECRET_MANAGER_MOMENTO_KEYS } from '@/core/constants/secret-manager-keys.js'
 
 const logger = getLogger()
 
@@ -47,9 +48,8 @@ export const getTopicsTokenHandler = middy(handler)
   .use(
     secretsManager({
       cacheExpiry: 10 * 60 * 1000,
-      cacheKey: 'momento-api-keys',
       fetchData: {
-        momentoApiKeys: 'MOMENTO_API_KEYS'
+        momentoApiKeys: SECRET_MANAGER_MOMENTO_KEYS
       },
       awsClientOptions: {
         region: process.env.AWS_REGION
