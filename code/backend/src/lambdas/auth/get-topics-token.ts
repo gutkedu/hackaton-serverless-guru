@@ -7,13 +7,13 @@ import { MiddyContext } from '@/shared/middy/middy-context.js'
 import { MomentoAuthClientProvider } from '@/providers/momento-auth/momento-auth-client-provider.js'
 import { parser } from '@aws-lambda-powertools/parser/middleware'
 import { z } from 'zod'
-import { TopicsContexts } from '@/core/enums/topic-contexts.js'
-import { topicContextToCacheMapper } from '@/core/mappers/topic-contexts-to-caches.js'
+import { ClientTopicContexts } from '@/core/enums/topic-contexts.js'
+import { topicContextToCacheMapper } from '@/shared/mappers/topic-contexts-to-caches.js'
 
 const logger = getLogger()
 
 const getTopicsTokenSchema = z.object({
-  topic: z.nativeEnum(TopicsContexts)
+  topic: z.nativeEnum(ClientTopicContexts)
 })
 
 type GetTopicsTokenSchema = z.infer<typeof getTopicsTokenSchema>
