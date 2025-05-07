@@ -10,7 +10,7 @@ let verifier: ReturnType<typeof CognitoJwtVerifier.create> | null = null
 /**
  * Authorizer function for API Gateway to validate JWTs from Cognito
  */
-export const handler = async (
+export const authorizerHandler = async (
   event: APIGatewayTokenAuthorizerEvent,
   context: Context
 ): Promise<APIGatewayAuthorizerResult> => {

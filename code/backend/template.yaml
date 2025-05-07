@@ -55,7 +55,7 @@ Resources:
     Properties:
       FunctionName: TokenAuthorizerFunction
       Description: Validates JWT tokens from Cognito for API Gateway
-      Handler: auth/authorizer.handler
+      Handler: authorizer.authorizerHandler
       Layers:
         - !Ref NodejsDepsLayer
         - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
@@ -71,7 +71,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/authorizer.ts
+          - src/infra/lambdas/auth/authorizer.ts
         External:
           - zod
           - aws-jwt-verify
@@ -111,7 +111,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/refresh-token.ts
+          - src/infra/lambdas/auth/refresh-token.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
@@ -162,7 +162,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/signup-player.ts
+          - src/infra/lambdas/auth/signup-player.ts
         External:
           - 'ksuid'
           - 'zod'
@@ -208,7 +208,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/signin.ts
+          - src/infra/lambdas/auth/signin.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
@@ -252,7 +252,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/confirm-signup.ts
+          - src/infra/lambdas/auth/confirm-signup.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -296,7 +296,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/forgot-password.ts
+          - src/infra/lambdas/auth/forgot-password.ts
         External:
           - zod
           - '@aws-lambda-powertools/logger'
@@ -338,7 +338,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/reset-password.ts
+          - src/infra/lambdas/auth/reset-password.ts
         External:
           - 'zod'
           - '@aws-lambda-powertools/logger'
@@ -382,7 +382,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/auth/get-topics-token.ts
+          - src/infra/lambdas/auth/get-topics-token.ts
         External:
           - 'zod'
           - '@aws-lambda-powertools/logger'
@@ -426,7 +426,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/game/create-lobby.ts
+          - src/infra/lambdas/game/create-lobby.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -467,7 +467,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/game/list-lobbies.ts
+          - src/infra/lambdas/game/list-lobbies.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -508,7 +508,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/game/get-lobby-details.ts
+          - src/infra/lambdas/game/get-lobby-details.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -550,7 +550,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/game/join-lobby.ts
+          - src/infra/lambdas/game/join-lobby.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -591,7 +591,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/game/leave-lobby.ts
+          - src/infra/lambdas/game/leave-lobby.ts
         External:
           - 'zod'
           - 'ksuid'
@@ -630,7 +630,7 @@ Resources:
         OutExtension:
           - .js=.mjs
         EntryPoints:
-          - src/lambdas/infra/create-momento-caches.ts
+          - src/infra/lambdas/infra/create-momento-caches.ts
         External:
           - 'zod'
           - '@aws-lambda-powertools/logger'
