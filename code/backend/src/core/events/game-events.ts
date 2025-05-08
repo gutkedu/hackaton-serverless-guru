@@ -26,9 +26,7 @@ export interface PlayerLeftEvent extends BaseGameEvent {
 
 export interface GameStartedEvent extends BaseGameEvent {
   type: GameEventType.GAME_STARTED
-  players: {
-    username: string
-  }[]
+  content: string
 }
 
 export interface GameEndedEvent extends BaseGameEvent {

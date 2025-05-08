@@ -1,9 +1,15 @@
 import { momentoCacheClient } from '@/shared/clients/momento-cache.js'
 import { CacheProvider } from './cache-provider.js'
-import { CreateCacheResponse, DeleteCacheResponse, CacheSetResponse, CacheGetResponse } from '@gomomento/sdk'
+import {
+  CreateCacheResponse,
+  DeleteCacheResponse,
+  CacheSetResponse,
+  CacheGetResponse,
+  CacheSetBatchResponse
+} from '@gomomento/sdk'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
-import { SetCacheKeyDTO, GetCacheKeyDTO } from './cache-dto.js'
+import { SetCacheKeyDTO, GetCacheKeyDTO, SetBatchKeyDTO } from './cache-dto.js'
 
 const logger = getLogger()
 
@@ -12,27 +18,6 @@ export class MomentoCache implements CacheProvider {
 
   constructor(apiKey: string) {
     this.apiKey = apiKey
-  }
-
-  async set({ cacheName, data, key }: SetCacheKeyDTO): Promise<void> {
-    try {
-      const client = await momentoCacheClient(this.apiKey)
-
-      const { type } = await client.set(cacheName, key, data)
-
-      switch (type) {
-        case CacheSetResponse.Success:
-          logger.info(`Cache '${cacheName}' set successfully`)
-          break
-        case CacheSetResponse.Error: {
-          logger.error(`Failed to set cache '${cacheName}': ${type}`)
-          throw new IntegrationError(`Failed to set cache '${cacheName}': ${type}`, { type })
-        }
-      }
-    } catch (error) {
-      logger.error(`Error setting cache '${cacheName}': ${error}`)
-      throw new IntegrationError(`Error setting cache '${cacheName}': ${error}`)
-    }
   }
 
   async get({ cacheName, key }: GetCacheKeyDTO): Promise<string | null> {
@@ -105,6 +90,53 @@ export class MomentoCache implements CacheProvider {
     } catch (error) {
       logger.error(`Error deleting cache '${cacheName}': ${error}`)
       throw new IntegrationError(`Error deleting cache '${cacheName}': ${error}`)
+    }
+  }
+
+  async set({ cacheName, data, key }: SetCacheKeyDTO): Promise<void> {
+    try {
+      const client = await momentoCacheClient(this.apiKey)
+
+      const { type } = await client.set(cacheName, key, data)
+
+      switch (type) {
+        case CacheSetResponse.Success:
+          logger.info(`Cache '${cacheName}' set successfully`)
+          break
+        case CacheSetResponse.Error: {
+          logger.error(`Failed to set cache '${cacheName}': ${type}`)
+          throw new IntegrationError(`Failed to set cache '${cacheName}': ${type}`, { type })
+        }
+      }
+    } catch (error) {
+      logger.error(`Error setting cache '${cacheName}': ${error}`)
+      throw new IntegrationError(`Error setting cache '${cacheName}': ${error}`)
+    }
+  }
+
+  async setBatch({ cacheName, items }: SetBatchKeyDTO): Promise<void> {
+    try {
+      const expirationInSeconds = 24 * 60 * 60 // 24 hours
+
+      const client = await momentoCacheClient(this.apiKey, expirationInSeconds)
+
+      const formattedItems = items.map(({ key, data }) => ({ key, value: data }))
+
+      const response = await client.setBatch(cacheName, formattedItems)
+
+      switch (response.type) {
+        case CacheSetBatchResponse.Success:
+          logger.info(`Batch set for cache '${cacheName}' completed successfully`)
+          break
+        case CacheSetBatchResponse.Error:
+          logger.error(`Failed to set batch for cache '${cacheName}': ${response.toString()}`)
+          throw new IntegrationError(`Failed to set batch for cache '${cacheName}'`, {
+            error: response.toString()
+          })
+      }
+    } catch (error) {
+      logger.error(`Error setting batch for cache '${cacheName}': ${error}`)
+      throw new IntegrationError(`Error setting batch for cache '${cacheName}': ${error}`)
     }
   }
 }

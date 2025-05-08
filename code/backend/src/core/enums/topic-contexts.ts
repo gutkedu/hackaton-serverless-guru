@@ -3,5 +3,6 @@
  * This is used to map topics to their respective caches.
  */
 export enum ClientTopicContexts {
-  LOBBY = 'lobby'
+  LOBBY = 'lobby',
+  MAIN_CHAT = 'main-chat'
 }
