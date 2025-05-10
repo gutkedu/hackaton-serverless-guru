@@ -1,8 +1,8 @@
 import { TopicsProvider } from './topics-provider.js'
-import { getLogger } from '@/shared/logger/get-logger.js'
-import { IntegrationError } from '@/shared/errors/integration-error.js'
-import { momentoTopicClient } from '@/shared/clients/momento-topic.js'
 import { TopicClient, TopicPublishResponse } from '@gomomento/sdk'
+import { getLogger } from '@/shared/logger/get-logger.js'
+import { momentoTopicClient } from '@/shared/clients/momento-topic.js'
+import { IntegrationError } from '@/shared/errors/integration-error.js'
 
 const logger = getLogger()
 

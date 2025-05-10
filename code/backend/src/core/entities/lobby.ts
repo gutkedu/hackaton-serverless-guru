@@ -56,6 +56,10 @@ export class LobbyEntity extends Item<LobbyProps> {
     return this.props.status || LobbyStatus.OPEN
   }
 
+  set status(status: LobbyStatus) {
+    this.props.status = status
+  }
+
   get playersUsernames(): string[] {
     return this.props.playersUsernames || []
   }

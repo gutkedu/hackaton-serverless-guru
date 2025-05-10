@@ -43,6 +43,16 @@ Authorization: Bearer {{authToken}}
   "lobbyId": "2NqvDLzdg5ThbAk6enzMrbtMq8S"
 }
 
+### Start game in lobby
+POST {{url}}/game/lobbies/start
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "lobbyId": "2wv4njgRjSQYhl0JDUDpWerTrpD",
+  "difficulty": "medium"
+}
+
 ### Leave lobby
 POST {{url}}/game/lobbies/leave
 Content-Type: {{contentType}}
