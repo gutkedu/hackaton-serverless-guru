@@ -1,20 +1,16 @@
 {
-  "name": "my-lambda-function",
+  "name": "container-application",
   "version": "1.0.0",
-  "description": "",
+  "description": "Container-based application sharing codebase with Lambda functions",
+  "type": "module",
   "scripts": {
-    "build": "npx tsc",
-    "lint": "eslint . --quiet",
+    "build": "tsc",
+    "start": "node --enable-source-maps dist/container/index.js",
+    "dev": "tsx watch src/container/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "sam:build": "sam build -t template.yaml",
-    "sam:validate": "sam validate --lint -t template.yaml"
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "esbuild": "^0.25.1"
-  },
-  "type": "module",
-  "devDependencies": {
     "@aws-lambda-powertools/idempotency": "^2.19.0",
     "@aws-lambda-powertools/logger": "^2.16.0",
     "@aws-lambda-powertools/parameters": "^2.17.0",
@@ -22,25 +18,24 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.798.0",
     "@aws-sdk/client-dynamodb": "^3.799.0",
     "@aws-sdk/client-eventbridge": "^3.798.0",
-    "@aws-sdk/client-kinesis-video": "^3.796.0",
-    "@aws-sdk/client-kinesis-video-signaling": "^3.797.0",
     "@aws-sdk/client-secrets-manager": "^3.777.0",
     "@aws-sdk/lib-dynamodb": "^3.799.0",
     "@gomomento/sdk": "^1.111.0",
     "@middy/core": "^6.2.2",
     "@middy/secrets-manager": "^6.2.2",
-    "@types/aws-lambda": "^8.10.147",
-    "@types/node": "^22.13.10",
     "aws-jwt-verify": "^4.0.1",
-    "dotenv": "^16.5.0",
-    "eslint": "^9.22.0",
-    "fastify": "^5.3.2",
+    "fastify": "^4.31.0",
+    "fastify-plugin": "^4.5.1",
     "ksuid": "^3.0.0",
-    "tsconfig-paths": "^4.2.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "tsx": "^4.7.1",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.1.1",
-    "zod": "^3.24.3"
+    "vitest": "^3.1.1"
   }
 }
