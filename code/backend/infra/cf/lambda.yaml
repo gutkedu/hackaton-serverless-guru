@@ -20,7 +20,7 @@ Globals:
     Timeout: 10
     MemorySize: 512
     Runtime: nodejs22.x
-    CodeUri: .
+    CodeUri: ../../
     Architectures:
       - arm64
     Environment:
@@ -39,7 +39,7 @@ Resources:
     Properties:
       LayerName: NodejsDepsLayer
       Description: Dependencies for the Nodejs Lambda functions
-      ContentUri: ./layers/nodejs-deps
+      ContentUri: ../../layers/nodejs-deps
       CompatibleRuntimes:
         - nodejs22.x
     Metadata:

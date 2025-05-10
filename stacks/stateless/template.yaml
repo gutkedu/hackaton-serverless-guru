@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Stateless Resources Stack
+
+Parameters:
+  AppName:
+    Type: String
+    Default: LivestreamApp
+    Description: Name of the application
+    
+  ContainerImageUri:
+    Type: String
+    Description: URI for the container image in ECR
+
+Resources:   
+  BackendStackApplication:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../code/backend/infra/cf/lambda.yaml
+      Parameters:
+        TableName: !ImportValue "StatefulStack-TableName"
+        UserPoolId: !ImportValue "StatefulStack-UserPoolId"
+        UserPoolClientId: !ImportValue "StatefulStack-UserPoolClientId"
+  
+  ContainerStackApplication:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: ../../code/backend/infra/cf/app-runner.yaml
+      Parameters:
+        AppName: !Ref AppName
+        TableName: !ImportValue "StatefulStack-TableName"
+        UserPoolId: !ImportValue "StatefulStack-UserPoolId"
+        UserPoolClientId: !ImportValue "StatefulStack-UserPoolClientId"
+        ImageUri: !Ref ContainerImageUri
+        ContainerPort: "3000"
+
+Outputs:  
+  ApiGatewayURL:
+    Description: URL for the API Gateway
+    Value: !GetAtt BackendStackApplication.Outputs.ApiGatewayURL
+    
+  ContainerAppURL:
+    Description: URL for the Container Application
+    Value: !GetAtt ContainerStackApplication.Outputs.AppRunnerServiceURL

@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   app:
@@ -6,11 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=development
-      - USER_POOL_ID=${USER_POOL_ID}
-      - USER_POOL_CLIENT_ID=${USER_POOL_CLIENT_ID}
-      - TABLE_NAME=${TABLE_NAME}
+      - USER_POOL_ID=${USER_POOL_ID:-local-user-pool-id}
+      - USER_POOL_CLIENT_ID=${USER_POOL_CLIENT_ID:-local-user-pool-client-id}
+      - TABLE_NAME=${TABLE_NAME:-local-table-name}
     volumes:
       - ./src:/app/src

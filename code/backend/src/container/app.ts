@@ -12,6 +12,13 @@ app.get('/hello', async () => {
   }
 })
 
+app.get('/health', async () => {
+  return {
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  }
+})
+
 app.setErrorHandler((error, _request, reply) => {
   if (error instanceof ZodError) {
     return reply.status(400).send({

@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: App Runner Service for Container Application
+
+Parameters:
+  AppName:
+    Type: String
+    Description: Name of the application
+  
+  TableName:
+    Type: String
+    Description: Name of the DynamoDB table
+    
+  UserPoolId:
+    Type: String
+    Description: ID of the Cognito User Pool
+    
+  UserPoolClientId:
+    Type: String
+    Description: ID of the Cognito User Pool Client
+  
+  ContainerPort:
+    Type: Number
+    Default: 3000
+    Description: Port on which the container is listening
+  
+  ImageUri:
+    Type: String
+    Description: URI of the container image in ECR
+
+Resources:
+  # IAM Role for App Runner Service
+  AppRunnerServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: build.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+  
+  # App Runner Service
+  AppRunnerService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: !Sub ${AppName}-container-service
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt AppRunnerServiceRole.Arn
+        ImageRepository:
+          ImageIdentifier: !Ref ImageUri
+          ImageRepositoryType: ECR
+          ImageConfiguration:
+            Port: !Ref ContainerPort
+            RuntimeEnvironmentVariables:
+              - Name: TABLE_NAME
+                Value: !Ref TableName
+              - Name: USER_POOL_ID
+                Value: !Ref UserPoolId
+              - Name: USER_POOL_CLIENT_ID
+                Value: !Ref UserPoolClientId
+              - Name: NODE_ENV
+                Value: production
+      InstanceConfiguration:
+        Cpu: '1 vCPU'
+        Memory: '2 GB'
+      HealthCheckConfiguration:
+        Path: '/health'
+        Protocol: 'HTTP'
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+        Interval: 5
+        Timeout: 2
+
+  # IAM Policy for Container App to access DynamoDB
+  ContainerDynamoDBPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${AppName}-container-dynamodb-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+      Roles:
+        - !Ref AppRunnerServiceRole
+
+Outputs:
+  AppRunnerServiceURL:
+    Description: URL of the App Runner Service
+    Value: !GetAtt AppRunnerService.ServiceUrl
+  
+  AppRunnerServiceArn:
+    Description: ARN of the App Runner Service
+    Value: !GetAtt AppRunnerService.ServiceArn

@@ -4,17 +4,17 @@
     "target": "ESNext",
     "strict": true,
     "preserveConstEnums": true,
-    "noEmit": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "noEmit": true,
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }
