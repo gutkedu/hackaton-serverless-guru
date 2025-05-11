@@ -21,7 +21,7 @@ const handler = async ({ email, password }: SigninSchema): Promise<APIGatewayPro
   try {
     logger.info('Signin request received')
 
-    const { idToken, expiresIn, refreshToken } = await cognitoProvider.signIn(email, password)
+    const { idToken, accessToken, expiresIn, refreshToken } = await cognitoProvider.signIn(email, password)
 
     return {
       statusCode: 200,
@@ -30,7 +30,8 @@ const handler = async ({ email, password }: SigninSchema): Promise<APIGatewayPro
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        accessToken: idToken,
+        accessToken,
+        idToken,
         expiresIn,
         refreshToken
       })

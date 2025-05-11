@@ -1,6 +1,7 @@
 @url={{baseUrl}}
 @contentType = application/json
-@authToken = {{signin.response.body.accessToken}}
+@accessToken = {{signin.response.body.accessToken}}
+@idToken = {{signin.response.body.idToken}}
 
 ### Sign in to get token
 # @name signin
@@ -15,7 +16,7 @@ Content-Type: {{contentType}}
 ### Create new lobby
 POST {{url}}/game/lobbies/create
 Content-Type: {{contentType}}
-Authorization: {{authToken}}
+Authorization: {{idToken}}
 
 {
   "name": "Test Lobby",
@@ -24,20 +25,20 @@ Authorization: {{authToken}}
 
 ### List all lobbies
 GET {{url}}/game/lobbies
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{idToken}}
 
 ### List lobbies with pagination
 GET {{url}}/game/lobbies?limit=5&nextToken=eyJwayI6IkxPQkJZIn0=
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{idToken}}
 
 ### Get lobby details
 GET {{url}}/game/lobbies/2wePmhojsFEwdYPxEIyWg3zqPQK
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{idToken}}
 
 ### Join lobby
 POST {{url}}/game/lobbies/join
 Content-Type: {{contentType}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{idToken}}
 
 {
   "lobbyId": "2NqvDLzdg5ThbAk6enzMrbtMq8S"
@@ -46,7 +47,7 @@ Authorization: Bearer {{authToken}}
 ### Start game in lobby
 POST {{url}}/game/lobbies/start
 Content-Type: {{contentType}}
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{idToken}}
 
 {
   "lobbyId": "2wv4njgRjSQYhl0JDUDpWerTrpD",
@@ -56,6 +57,6 @@ Authorization: Bearer {{authToken}}
 ### Leave lobby
 POST {{url}}/game/lobbies/leave
 Content-Type: {{contentType}}
-Authorization: {{authToken}}
+Authorization: {{idToken}}
 
 {}

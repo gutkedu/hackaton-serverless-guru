@@ -2,9 +2,10 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: 396608768142.dkr.ecr.us-east-1.amazonaws.com/hackaton-container-app:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     ports:
       - '3000:3000'
     environment:

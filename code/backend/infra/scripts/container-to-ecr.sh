@@ -5,16 +5,16 @@ set -e
 AWS_REGION="us-east-1"
 AWS_PROFILE="gutkedu-terraform"
 ECR_REPOSITORY_NAME="hackaton-container-app"
-IMAGE_TAG="latest"
+IMAGE_TAG=latest
 
 # Get the root directory of the project
 ROOT_DIR=$(cd "$(dirname "$0")/../../" && pwd)
 # Docker files are now in the root directory
 DOCKER_DIR="${ROOT_DIR}"
 
-# Step 1: Build the Docker image locally
-echo "Building Docker image..."
-docker build -t $ECR_REPOSITORY_NAME:$IMAGE_TAG -f "$DOCKER_DIR/Dockerfile" "$ROOT_DIR"
+# Step 1: Build the Docker image locally with no cache
+echo "Building Docker image with cache-busting..."
+docker build --no-cache -t $ECR_REPOSITORY_NAME:$IMAGE_TAG --build-arg NODE_ENV=production --build-arg BUILD_DATE="$IMAGE_TAG" -f "$DOCKER_DIR/Dockerfile" "$ROOT_DIR"
 
 # Step 2: Create ECR repository if it doesn't exist
 echo "Creating ECR repository if it doesn't exist..."
@@ -40,5 +40,12 @@ docker push $ecr_uri/$ECR_REPOSITORY_NAME:$IMAGE_TAG
 FULL_IMAGE_URI="$ecr_uri/$ECR_REPOSITORY_NAME:$IMAGE_TAG"
 echo "Image pushed successfully: $FULL_IMAGE_URI"
 
+# Also tag as latest and push
+docker tag $ECR_REPOSITORY_NAME:$IMAGE_TAG $ecr_uri/$ECR_REPOSITORY_NAME:latest
+docker push $ecr_uri/$ECR_REPOSITORY_NAME:latest
+echo "Latest tag also pushed"
 
+# Output the image URI and tag for deployment
+echo "FULL_IMAGE_URI=$FULL_IMAGE_URI"
+echo "LATEST_IMAGE_URI=$ecr_uri/$ECR_REPOSITORY_NAME:latest"
 

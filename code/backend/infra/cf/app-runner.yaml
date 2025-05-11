@@ -38,7 +38,9 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: build.apprunner.amazonaws.com
+              Service: 
+                - build.apprunner.amazonaws.com
+                - apigateway.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
@@ -98,6 +100,46 @@ Resources:
       Roles:
         - !Ref AppRunnerServiceRole
 
+  # Adding API Gateway for the container service
+  ContainerProxyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: api
+      EndpointConfiguration: REGIONAL
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: !Sub ${AppName}-container-api
+        schemes:
+          - https
+        paths:
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              parameters:
+                - name: proxy
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              x-amazon-apigateway-integration:
+                uri: !Join 
+                  - ''
+                  - - 'https://'
+                    - !GetAtt AppRunnerService.ServiceUrl
+                    - '/{proxy}'
+                responses:
+                  default:
+                    statusCode: '200'
+                requestParameters:
+                  integration.request.path.proxy: method.request.path.proxy
+                passthroughBehavior: when_no_match
+                httpMethod: ANY
+                type: http_proxy
+
 Outputs:
   AppRunnerServiceURL:
     Description: URL of the App Runner Service
@@ -106,3 +148,9 @@ Outputs:
   AppRunnerServiceArn:
     Description: ARN of the App Runner Service
     Value: !GetAtt AppRunnerService.ServiceArn
+    
+  ContainerProxyURL:
+    Description: URL for the Container Proxy API
+    Value: !Sub https://${ContainerProxyApi}.execute-api.${AWS::Region}.amazonaws.com/api/
+    Export:
+      Name: !Sub "${AppName}-ContainerProxyURL"

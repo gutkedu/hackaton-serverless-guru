@@ -1,5 +1,8 @@
 FROM node:22-slim AS builder
 
+ARG BUILD_DATE=unknown
+ENV BUILD_DATE=${BUILD_DATE}
+
 WORKDIR /app
 
 # Copy package files and install dependencies
@@ -7,16 +10,20 @@ COPY container-package.json package.json
 COPY package-lock.json* ./
 RUN npm i
 
-# Copy source files
+# Add a marker with the build date to invalidate cache
+RUN echo "Build date: $BUILD_DATE" > build_info.txt
+
+# Copy source files and build configuration
 COPY tsconfig.json ./
+COPY esbuild.container.mjs ./
 COPY src ./src
 
-# Build the application
 RUN npm run build
-# For debugging: verify the dist directory
-RUN ls -la /app
 
 FROM node:22-slim
+
+ARG BUILD_DATE=unknown
+ENV BUILD_DATE=${BUILD_DATE}
 
 WORKDIR /app
 
@@ -27,7 +34,10 @@ COPY package-lock.json* ./
 # Install production dependencies
 RUN npm i --omit=dev
 
-# Copy compiled code from builder - corrected path
+# Add a marker with the build date to invalidate cache
+RUN echo "Build date: $BUILD_DATE" > build_info.txt
+
+# Copy compiled code from builder
 COPY --from=builder /app/dist ./dist
 
 # Expose the port the app runs on
