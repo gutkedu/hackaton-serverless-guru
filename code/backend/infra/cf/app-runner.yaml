@@ -139,14 +139,14 @@ Resources:
                 passthroughBehavior: when_no_match
                 httpMethod: ANY
                 type: http_proxy
-          /events/game:
+          /events/game-started:
             post:
               x-amazon-apigateway-integration:
                 uri: !Join 
                   - ''
                   - - 'https://'
                     - !GetAtt AppRunnerService.ServiceUrl
-                    - '/events/game'
+                    - '/events/game-started'
                 responses:
                   default:
                     statusCode: '200'
@@ -180,7 +180,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: execute-api:Invoke
-                Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game
+                Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game-started
 
   # EventBridge rule to target the API Gateway
   GameEventsRule:
@@ -197,7 +197,7 @@ Resources:
       State: ENABLED
       Targets:
         - Id: ApiGatewayTarget
-          Arn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game
+          Arn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game-started
           RoleArn: !GetAtt EventBridgeInvokeApiRole.Arn
           HttpParameters:
             PathParameterValues: []

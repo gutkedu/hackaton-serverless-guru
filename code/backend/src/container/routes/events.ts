@@ -3,8 +3,10 @@ import { getLogger } from '@/shared/logger/get-logger.js'
 
 const logger = getLogger('events-handler')
 
+//TODO: Add aws auth v4
+
 export async function eventsRoutes(fastify: FastifyInstance) {
-  fastify.post('/events/game', async (request, reply) => {
+  fastify.post('/events/game-started', async (request, reply) => {
     try {
       logger.info('Received game event from EventBridge', {
         body: request.body

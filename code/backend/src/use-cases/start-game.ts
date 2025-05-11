@@ -1,5 +1,4 @@
 import { GameDifficulty } from '@/core/enums/game-difficulty.js'
-import { GameEventType, GameStartedEvent } from '@/core/events/game-events.js'
 import { LobbyStatus } from '@/core/entities/lobby.js'
 import { QuotesProvider } from '@/providers/quotes-api/quotes-provider.js'
 import { TopicsProvider } from '@/providers/topics/topics-provider.js'
@@ -11,6 +10,7 @@ import { randomUUID } from 'crypto'
 import { EventProvider } from '@/providers/event/event-provider.js'
 import { EventBridgeType } from '@/providers/event/events-dto.js'
 import { GameStartedDetail } from '@/providers/event/events-detail.js'
+import { GameEventType, GameStartedEvent } from '@/core/events/game-events.js'
 
 const logger = getLogger()
 
