@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import { ZodError } from 'zod'
 import { env } from './env/env.js'
 import { fastifyJwtAuth, requireAuthentication } from './auth/fastify-jwt-auth.js'
+import { eventsRoutes } from './routes/events.js'
 
 export const app = fastify()
 
@@ -9,6 +10,9 @@ export const app = fastify()
 app.register(fastifyJwtAuth, {
   userPoolClientId: process.env.USER_POOL_CLIENT_ID
 })
+
+// Register routes
+app.register(eventsRoutes)
 
 app.get('/health', async () => {
   return {

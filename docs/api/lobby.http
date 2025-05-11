@@ -47,7 +47,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{idToken}}
 
 {
-  "lobbyId": "2wvhFHjZ8560Foj6xZBm5Ur9oWX",
+  "lobbyId": "2wvqDzGsyuu2cBUh9BUBZY1O6TQ",
   "difficulty": "medium"
 }
 

@@ -1,5 +1,5 @@
-import { EventType } from './events-dto.js'
+import { EventBridgeType } from './events-dto.js'
 
 export interface EventProvider {
-  sendEvent(eventType: EventType, payload: unknown): Promise<void>
+  sendEvent(eventType: EventBridgeType, payload: unknown): Promise<void>
 }

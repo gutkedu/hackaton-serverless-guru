@@ -9,7 +9,7 @@ import { getLogger } from '@/shared/logger/get-logger.js'
 import { generateLobbyTopicName } from '@/shared/topics/generate-topic-name.js'
 import { randomUUID } from 'crypto'
 import { EventProvider } from '@/providers/event/event-provider.js'
-import { EventType } from '@/providers/event/events-dto.js'
+import { EventBridgeType } from '@/providers/event/events-dto.js'
 import { GameStartedDetail } from '@/providers/event/events-detail.js'
 
 const logger = getLogger()
@@ -78,7 +78,7 @@ export class StartGameUseCase {
       const topicName = generateLobbyTopicName(lobbyId)
       await this.topicProvider.publish(topicName, JSON.stringify(eventMessage))
 
-      await this.eventProvider.sendEvent(EventType.GAME_STARTED, {
+      await this.eventProvider.sendEvent(EventBridgeType.GAME_STARTED, {
         data: {
           content: randomQuote.content,
           gameId,

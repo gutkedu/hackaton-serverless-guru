@@ -137,3 +137,5 @@ dist
 
 .aws-sam
 .aws-sam/build
+
+dist/

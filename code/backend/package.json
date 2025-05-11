@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "npx tsc",
+    "build": "npx tsc --noEmit",
     "lint": "eslint . --quiet",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -26,6 +26,7 @@
     "@aws-sdk/client-kinesis-video-signaling": "^3.797.0",
     "@aws-sdk/client-secrets-manager": "^3.777.0",
     "@aws-sdk/lib-dynamodb": "^3.799.0",
+    "@aws-sdk/signature-v4": "^3.370.0",
     "@gomomento/sdk": "^1.111.0",
     "@middy/core": "^6.2.2",
     "@middy/secrets-manager": "^6.2.2",

@@ -139,6 +139,70 @@ Resources:
                 passthroughBehavior: when_no_match
                 httpMethod: ANY
                 type: http_proxy
+          /events/game:
+            post:
+              x-amazon-apigateway-integration:
+                uri: !Join 
+                  - ''
+                  - - 'https://'
+                    - !GetAtt AppRunnerService.ServiceUrl
+                    - '/events/game'
+                responses:
+                  default:
+                    statusCode: '200'
+                timeoutInMillis: 5000
+                type: http_proxy
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                requestParameters:
+                  integration.request.header.Content-Type: "'application/json'"
+              parameters:
+                - name: Content-Type
+                  in: header
+                  required: true
+                  type: string
+
+  # Role that allows EventBridge to invoke API Gateway
+  EventBridgeInvokeApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeApiGateway
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: execute-api:Invoke
+                Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game
+
+  # EventBridge rule to target the API Gateway
+  GameEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${AppName}-game-events
+      Description: "Captures game events and sends them to the container via API Gateway"
+      EventBusName: !ImportValue "StatefulStack-EventBusName"
+      EventPattern:
+        source:
+          - "game-service"
+        detail-type:
+          - "game-started"
+      State: ENABLED
+      Targets:
+        - Id: ApiGatewayTarget
+          Arn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ContainerProxyApi}/api/POST/events/game
+          RoleArn: !GetAtt EventBridgeInvokeApiRole.Arn
+          HttpParameters:
+            PathParameterValues: []
+            QueryStringParameters: {}
+            HeaderParameters: {}
 
 Outputs:
   AppRunnerServiceURL:

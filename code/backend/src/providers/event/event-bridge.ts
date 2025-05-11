@@ -3,7 +3,7 @@ import { EventProvider } from './event-provider.js'
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge'
 import { eventBridge } from '@/shared/clients/event-bridge-client.js'
 import { IntegrationError } from '@/shared/errors/integration-error.js'
-import { eventSource, EventType } from './events-dto.js'
+import { eventSource, EventBridgeType } from './events-dto.js'
 
 const logger = getLogger()
 
@@ -16,7 +16,7 @@ export class EventBridgeProvider implements EventProvider {
     }
     this.client = eventBridge()
   }
-  async sendEvent(eventType: EventType, payload: unknown): Promise<void> {
+  async sendEvent(eventType: EventBridgeType, payload: unknown): Promise<void> {
     try {
       await this.client.send(
         new PutEventsCommand({
