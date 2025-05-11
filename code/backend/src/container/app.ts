@@ -10,13 +10,6 @@ app.register(fastifyJwtAuth, {
   userPoolClientId: process.env.USER_POOL_CLIENT_ID
 })
 
-app.get('/hello', async () => {
-  return {
-    message: 'Hello World!',
-    timestamp: new Date().toISOString()
-  }
-})
-
 app.get('/health', async () => {
   return {
     status: 'ok',

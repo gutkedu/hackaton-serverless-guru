@@ -4,11 +4,13 @@ import { LobbyStatus } from '@/core/entities/lobby.js'
 import { QuotesProvider } from '@/providers/quotes-api/quotes-provider.js'
 import { TopicsProvider } from '@/providers/topics/topics-provider.js'
 import { LobbyRepository } from '@/repositories/lobby-repository.js'
-import { PlayerRepository } from '@/repositories/player-repository.js'
 import { BusinessError } from '@/shared/errors/business-error.js'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { generateLobbyTopicName } from '@/shared/topics/generate-topic-name.js'
 import { randomUUID } from 'crypto'
+import { EventProvider } from '@/providers/event/event-provider.js'
+import { EventType } from '@/providers/event/events-dto.js'
+import { GameStartedDetail } from '@/providers/event/events-detail.js'
 
 const logger = getLogger()
 
@@ -26,9 +28,9 @@ interface QuoteLength {
 export class StartGameUseCase {
   constructor(
     private readonly lobbyRepository: LobbyRepository,
-    private readonly playerRepository: PlayerRepository,
     private readonly quoteProvider: QuotesProvider,
-    private readonly topicProvider: TopicsProvider
+    private readonly topicProvider: TopicsProvider,
+    private readonly eventProvider: EventProvider
   ) {}
 
   async execute({ lobbyId, userId, difficulty = GameDifficulty.MEDIUM }: StartGameRequest): Promise<void> {
@@ -75,6 +77,16 @@ export class StartGameUseCase {
 
       const topicName = generateLobbyTopicName(lobbyId)
       await this.topicProvider.publish(topicName, JSON.stringify(eventMessage))
+
+      await this.eventProvider.sendEvent(EventType.GAME_STARTED, {
+        data: {
+          content: randomQuote.content,
+          gameId,
+          lobbyId,
+          timestamp: Date.now(),
+          type: GameEventType.GAME_STARTED
+        }
+      } as GameStartedDetail)
 
       logger.info(`Game started in lobby ${lobbyId}`, { gameId, difficulty })
     } catch (error) {

@@ -39,6 +39,52 @@ Resources:
       Name: "AppEventBusName"
 
   ##########################################################################
+  #                 EventBridge Rule for Logging All Events                #
+  ##########################################################################
+  AllEventsLogRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "AllEventsToCloudWatch"
+      Description: "Captures all events and sends them to CloudWatch Logs"
+      EventBusName: !Ref EventBus
+      EventPattern:
+        account:
+          - !Ref AWS::AccountId
+      State: ENABLED
+      Targets:
+        - Arn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/events/logs-event-bus:*"
+          Id: AllEventsLogGroup
+
+  AllEventsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/events/logs-event-bus"
+      RetentionInDays: 30
+
+  EventsLogGroupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PutEventsToCloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: 
+                  - !GetAtt AllEventsLogGroup.Arn
+                  - !Sub "${AllEventsLogGroup.Arn}:*"
+      
+  ##########################################################################
   #                          SecretsManager                                #
   ##########################################################################
   SecretsManager:

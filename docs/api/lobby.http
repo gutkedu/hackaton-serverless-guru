@@ -27,9 +27,6 @@ Authorization: {{idToken}}
 GET {{url}}/game/lobbies
 Authorization: Bearer {{idToken}}
 
-### List lobbies with pagination
-GET {{url}}/game/lobbies?limit=5&nextToken=eyJwayI6IkxPQkJZIn0=
-Authorization: Bearer {{idToken}}
 
 ### Get lobby details
 GET {{url}}/game/lobbies/2wePmhojsFEwdYPxEIyWg3zqPQK
@@ -50,7 +47,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{idToken}}
 
 {
-  "lobbyId": "2wv4njgRjSQYhl0JDUDpWerTrpD",
+  "lobbyId": "2wvhFHjZ8560Foj6xZBm5Ur9oWX",
   "difficulty": "medium"
 }
 

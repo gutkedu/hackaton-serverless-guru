@@ -29,6 +29,7 @@ Globals:
         USER_POOL_ID: !Ref UserPoolId
         USER_POOL_CLIENT_ID: !Ref UserPoolClientId
         TABLE_NAME: !Ref TableName
+        EVENT_BUS_NAME: !ImportValue "StatefulStack-EventBusName"
 
 Resources:
   ##########################################################################
@@ -628,6 +629,8 @@ Resources:
               Action:
                 - secretsmanager:GetSecretValue
               Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
+        - EventBridgePutEventsPolicy:
+            EventBusName: !ImportValue "StatefulStack-EventBusName"
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -647,6 +650,7 @@ Resources:
           - '@middy/secrets-manager'
           - '@aws-sdk/lib-dynamodb'
           - '@aws-sdk/client-dynamodb'
+          - '@aws-sdk/client-eventbridge'
           - '@gomomento/sdk'
 
   ##########################################################################

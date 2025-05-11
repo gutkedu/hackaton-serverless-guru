@@ -5,8 +5,7 @@ Description: Stateless Resources Stack
 Parameters:
   AppName:
     Type: String
-    Default: LivestreamApp
-    Description: Name of the application
+    Default: ServerlessHackaton
     
   ContainerImageUri:
     Type: String

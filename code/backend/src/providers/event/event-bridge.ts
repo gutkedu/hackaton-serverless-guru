@@ -30,9 +30,7 @@ export class EventBridgeProvider implements EventProvider {
           ]
         })
       )
-      logger.info('Event successfully sent to EventBridge', {
-        event
-      })
+      logger.info('Event successfully sent to EventBridge')
     } catch (error) {
       logger.error('Error sending event to EventBridge', {
         error
