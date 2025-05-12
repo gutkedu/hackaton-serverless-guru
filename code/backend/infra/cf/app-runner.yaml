@@ -45,11 +45,53 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
   
+  # IAM Role for App Runner Instance
+  AppRunnerInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+  
   # App Runner Service
   AppRunnerService:
     Type: AWS::AppRunner::Service
     Properties:
       ServiceName: !Sub ${AppName}-container-service
+      InstanceConfiguration:
+        Cpu: '1 vCPU'
+        Memory: '2 GB'
+        InstanceRoleArn: !GetAtt AppRunnerInstanceRole.Arn
       SourceConfiguration:
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt AppRunnerServiceRole.Arn
@@ -67,9 +109,11 @@ Resources:
                 Value: !Ref UserPoolClientId
               - Name: NODE_ENV
                 Value: production
-      InstanceConfiguration:
-        Cpu: '1 vCPU'
-        Memory: '2 GB'
+              - Name: AWS_REGION
+                Value: !Ref AWS::Region
+            RuntimeEnvironmentSecrets:
+              - Name: MOMENTO_API_KEYS
+                Value: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS
       HealthCheckConfiguration:
         Path: '/health'
         Protocol: 'HTTP'
@@ -77,28 +121,6 @@ Resources:
         UnhealthyThreshold: 5
         Interval: 5
         Timeout: 2
-
-  # IAM Policy for Container App to access DynamoDB
-  ContainerDynamoDBPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub ${AppName}-container-dynamodb-policy
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - dynamodb:BatchGetItem
-              - dynamodb:GetItem
-              - dynamodb:Query
-              - dynamodb:Scan
-              - dynamodb:BatchWriteItem
-              - dynamodb:PutItem
-              - dynamodb:UpdateItem
-              - dynamodb:DeleteItem
-            Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
-      Roles:
-        - !Ref AppRunnerServiceRole
 
   # Adding API Gateway for the container service
   ContainerProxyApi:

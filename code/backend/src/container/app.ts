@@ -2,7 +2,7 @@ import fastify from 'fastify'
 import { ZodError } from 'zod'
 import { env } from './env/env.js'
 import { fastifyJwtAuth, requireAuthentication } from './auth/fastify-jwt-auth.js'
-import { eventsRoutes } from './routes/events.js'
+import { eventsRoutes } from './controllers/events/routes.js'
 
 export const app = fastify()
 

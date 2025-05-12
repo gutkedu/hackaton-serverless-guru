@@ -1,5 +1,12 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { getLogger } from '@/shared/logger/get-logger.js'
+import { makeGameListenerUseCase } from '@/use-cases/factories/make-game-listener.js'
+import { GameStartedDetail } from '@/providers/event/events-detail.js'
+
+import { EventBridgeEvent } from 'aws-lambda'
+import { EventBridgeType } from '@/providers/event/events-dto.js'
+import { GameEventType } from '@/core/events/game-events.js'
+import { env } from '@/container/env/env.js'
 
 const logger = getLogger('game-events-controller')
 
@@ -9,7 +16,17 @@ export async function gameStartedController(request: FastifyRequest, reply: Fast
       body: request.body
     })
 
-    //TODO: Implement your event processing logic here
+    const payload = request.body as EventBridgeEvent<EventBridgeType.GAME_STARTED, GameStartedDetail>
+
+    const useCase = makeGameListenerUseCase(env.MOMENTO_API_KEYS.MOMENTO_USER_USER_KEY)
+
+    await useCase.execute({
+      gameId: payload.detail.data.gameId,
+      lobbyId: payload.detail.data.lobbyId,
+      content: payload.detail.data.content,
+      type: GameEventType.GAME_STARTED,
+      timestamp: payload.detail.data.timestamp
+    })
 
     return reply.status(200).send({
       success: true,

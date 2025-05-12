@@ -13,15 +13,6 @@ Content-Type: {{contentType}}
   "password": "Senha123!"
 }
 
-### Create new lobby
-POST {{url}}/game/lobbies/create
-Content-Type: {{contentType}}
-Authorization: {{idToken}}
-
-{
-  "name": "Test Lobby",
-  "maxPlayers": 4
-}
 
 ### List all lobbies
 GET {{url}}/game/lobbies
@@ -41,13 +32,23 @@ Authorization: Bearer {{idToken}}
   "lobbyId": "2NqvDLzdg5ThbAk6enzMrbtMq8S"
 }
 
+### Create new lobby
+POST {{url}}/game/lobbies/create
+Content-Type: {{contentType}}
+Authorization: {{idToken}}
+
+{
+  "name": "Test Lobby",
+  "maxPlayers": 4
+}
+
 ### Start game in lobby
 POST {{url}}/game/lobbies/start
 Content-Type: {{contentType}}
 Authorization: Bearer {{idToken}}
 
 {
-  "lobbyId": "2wvqDzGsyuu2cBUh9BUBZY1O6TQ",
+  "lobbyId": "2wztEXbZUuN3ZFMbBiXqLw49yLg",
   "difficulty": "medium"
 }
 

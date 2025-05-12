@@ -4,6 +4,5 @@ import { GameListenerUseCase } from '../game-listener.js'
 
 export function makeGameListenerUseCase(momentoApiKey: string) {
   const topicsProvider = new MomentoTopicsProvider(momentoApiKey, AvailableMomentoCaches.LOBBY)
-
   return new GameListenerUseCase(topicsProvider)
 }

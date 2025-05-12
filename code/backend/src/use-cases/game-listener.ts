@@ -16,17 +16,21 @@ interface GameListenerInput {
 export class GameListenerUseCase {
   constructor(private readonly topicsProvider: TopicsProvider) {}
 
-  async execute({ lobbyId, gameId, content, type, timestamp }: GameListenerInput): Promise<void> {
+  async execute({ lobbyId, gameId, type }: GameListenerInput): Promise<void> {
     try {
       const topicName = generateLobbyTopicName(lobbyId)
 
       logger.info(`Processing game event for lobby ${lobbyId}`, {
         gameId,
-        type,
         topicName
       })
 
-      //subscribe to momento topic
+      await this.topicsProvider.subscribe(topicName)
+
+      setTimeout(async () => {
+        logger.info(`Unsubscribed from topic ${topicName}`)
+        process.exit(0)
+      }, 2 * 60 * 1000)
 
       logger.info(`Event published to topic ${topicName}`, { type })
     } catch (error) {
