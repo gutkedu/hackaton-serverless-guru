@@ -25,14 +25,10 @@ export class GameListenerUseCase {
         topicName
       })
 
+      // Subscribe to the topic and let the lambda timeout handle the duration
       await this.topicsProvider.subscribe(topicName)
 
-      setTimeout(async () => {
-        logger.info(`Unsubscribed from topic ${topicName}`)
-        process.exit(0)
-      }, 2 * 60 * 1000)
-
-      logger.info(`Event published to topic ${topicName}`, { type })
+      logger.info(`Subscribed to topic ${topicName}`, { type })
     } catch (error) {
       logger.error('Error processing game event', { error, lobbyId, gameId, type })
       throw error
