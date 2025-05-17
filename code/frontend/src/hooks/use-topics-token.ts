@@ -1,10 +1,10 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-context";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-// Key for storing tokens in localStorage
-const TOPICS_TOKENS_KEY = "topics_tokens";
+// Note: We're now relying solely on the auth context to manage tokens
+// and are not using localStorage directly in this hook
 
 /**
  * A hook for easily accessing topics tokens in components
@@ -15,85 +15,63 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
   const { user, getTopicsToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cachedTokens, setCachedTokens] = useState<Record<string, string>>(
-    () => {
-      // Initialize from localStorage if available
-      if (typeof window !== "undefined") {
-        const storedTokens = localStorage.getItem(TOPICS_TOKENS_KEY);
-        return storedTokens ? JSON.parse(storedTokens) : {};
-      }
-      return {};
-    }
-  );
 
-  // Save cachedTokens to localStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== "undefined" && Object.keys(cachedTokens).length > 0) {
-      localStorage.setItem(TOPICS_TOKENS_KEY, JSON.stringify(cachedTokens));
-    }
-  }, [cachedTokens]);
+  // Track ongoing token fetch requests to prevent duplicates
+  const pendingFetches = useRef<Record<string, boolean>>({});
 
-  // Automatically fetch essential tokens when the user is authenticated
-  useEffect(() => {
-    if (user) {
-      const essentialTopics = ["lobby", "main-chat"];
+  // Note: We're removing the separate cachedTokens state since all tokens are now
+  // managed in the auth context and we were having sync issues between the two
 
-      const fetchEssentialTokens = async () => {
-        for (const topic of essentialTopics) {
-          try {
-            // Check if we already have a valid token in the auth context
-            const hasValidToken = 
-              user.topicsTokens && 
-              topic in user.topicsTokens && 
-              user.topicsTokens[topic].expiresAt > Date.now();
-              
-            if (!hasValidToken) {
-              console.log(`Auto-fetching token for ${topic}`);
-              await getTopicsToken(topic);
-              console.log(`Auto-fetched token for ${topic}`);
-            }
-          } catch (err) {
-            console.error(`Failed to auto-fetch token for ${topic}:`, err);
-            // Continue with other topics even if one fails
-          }
-        }
-      };
-
-      fetchEssentialTokens();
-    }
-  }, [user, getTopicsToken]);
+  // We no longer automatically fetch tokens on every idToken change
+  // Tokens will be fetched on demand through getToken
+  // Initial token fetch is handled in the auth context when user signs in
 
   /**
    * Get a topics token for the specified topic, with built-in error handling
    * First checks the cache, then fetches if needed
    */
+  // Keep track of tokens that have already been fetched during this session
+  const tokenRequestsMade = useRef<Record<string, boolean>>({});
+
   const getToken = useCallback(
     async (topic: string = defaultTopic): Promise<string | null> => {
       const currentTopic = topic || defaultTopic;
-      
-      // Check if we have a valid cached token
-      const hasValidCachedToken = 
-        user?.topicsTokens && 
-        currentTopic in (user.topicsTokens || {}) && 
-        (user.topicsTokens[currentTopic]?.expiresAt || 0) > Date.now();
-        
-      // Return from cache if available and still valid
-      if (hasValidCachedToken && user?.topicsTokens?.[currentTopic]?.token) {
+
+      // Use existing token if available and valid
+      if (
+        user?.topicsTokens &&
+        user.topicsTokens[currentTopic] &&
+        user.topicsTokens[currentTopic].expiresAt > Date.now()
+      ) {
+        // Log only the first time we use the cached token
+        if (!tokenRequestsMade.current[currentTopic]) {
+          console.log(`Using cached token for ${currentTopic}`);
+          tokenRequestsMade.current[currentTopic] = true;
+        }
         return user.topicsTokens[currentTopic].token;
+      }
+
+      // Skip if we're already fetching this token
+      if (pendingFetches.current[currentTopic]) {
+        console.log(`Already fetching token for ${currentTopic}, waiting...`);
+        // Wait for the existing request to complete
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return getToken(currentTopic);
       }
 
       setIsLoading(true);
       setError(null);
-
+      pendingFetches.current[currentTopic] = true;
+      
       try {
         console.log(`Fetching token for topic: ${currentTopic}`);
         const token = await getTopicsToken(currentTopic);
+        tokenRequestsMade.current[currentTopic] = true;
 
         if (!token) {
           throw new Error("Failed to get a valid token");
         }
 
-        // Cache the token for future use (handled by getTopicsToken)
         console.log(`Successfully fetched token for topic: ${currentTopic}`);
         return token;
       } catch (err) {
@@ -104,6 +82,7 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
         return null;
       } finally {
         setIsLoading(false);
+        pendingFetches.current[currentTopic] = false;
       }
     },
     [getTopicsToken, defaultTopic, user]
@@ -111,7 +90,6 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
 
   return {
     getToken,
-    cachedTokens,
     isLoading,
     error,
   };

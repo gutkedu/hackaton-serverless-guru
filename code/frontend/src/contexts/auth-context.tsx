@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import {
   authService,
   SignInCredentials,
@@ -44,6 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Track ongoing token fetch operations to prevent duplicates
+  const pendingTokenFetches = useRef<Record<string, boolean>>({});
+
   // Load user from localStorage on mount and handle token refresh if needed
   useEffect(() => {
     const loadUser = async () => {
@@ -62,39 +65,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const refreshResponse = await authService.refreshToken({
                 refreshToken: parsedUser.refreshToken,
               });
-              
+
               const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
-              
-              // Update user with new tokens
-              const refreshedUser = {
+
+              // Update the user with the new tokens
+              const updatedUser = {
                 ...parsedUser,
                 idToken: refreshResponse.idToken,
                 accessToken: refreshResponse.accessToken,
                 refreshToken: refreshResponse.refreshToken,
                 expiresAt,
-                // Reset topic tokens since they would also be expired
-                topicsTokens: {},
               };
-              
-              setUser(refreshedUser);
-              console.log("Successfully refreshed authentication token");
-              
-              // Fetch new topic tokens after successful refresh
-              setTimeout(() => {
-                fetchEssentialTopicsTokens(refreshedUser);
-              }, 0);
+
+              // Save to localStorage
+              localStorage.setItem(TOKEN_KEY, JSON.stringify(updatedUser));
+              setUser(updatedUser);
+              console.log("Successfully refreshed token");
             } catch (refreshError) {
               console.error("Failed to refresh token:", refreshError);
-              // Token refresh failed, force logout
+              // Clear user data if refresh fails
               localStorage.removeItem(TOKEN_KEY);
-              setUser(null);
             }
           }
         }
       } catch (error) {
-        console.error("Failed to load auth state:", error);
+        console.error("Error loading user from localStorage:", error);
+        // Clear potentially corrupted user data
         localStorage.removeItem(TOKEN_KEY);
-        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -103,48 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser();
   }, []);
 
-  // Save user to localStorage when it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(TOKEN_KEY, JSON.stringify(user));
-    }
-  }, [user]);
-
-  // Helper function to fetch topic tokens
-  const fetchEssentialTopicsTokens = async (userObj: User) => {
-    const essentialTopics = ["lobby", "main-chat"];
-    for (const topic of essentialTopics) {
-      try {
-        console.log(`Fetching token for topic: ${topic}`);
-        const topicsResponse = await authService.getTopicsToken(
-          topic,
-          userObj.idToken
-        );
-        const topicsExpiresAt = Date.now() + topicsResponse.expiration * 1000;
-
-        // Update the user state with the new token
-        setUser((prevUser) => {
-          if (!prevUser) return userObj;
-
-          return {
-            ...prevUser,
-            topicsTokens: {
-              ...prevUser.topicsTokens,
-              [topic]: {
-                token: topicsResponse.token,
-                expiresAt: topicsExpiresAt,
-              },
-            },
-          };
-        });
-
-        console.log(`Successfully stored token for topic: ${topic}`);
-      } catch (topicsError) {
-        console.error(`Failed to fetch token for topic: ${topic}`, topicsError);
-        // Continue trying other topics even if one fails
-      }
-    }
-  };
+  // We no longer fetch tokens on every idToken change
+  // Instead, we fetch them only when the user signs in
 
   const signIn = async (credentials: SignInCredentials) => {
     setIsLoading(true);
@@ -167,15 +124,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username, // Add username
       };
 
-      // Set the user object immediately to improve perceived performance
+      // Save to state and localStorage
       setUser(userObject);
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(userObject));
 
-      // Fetch tokens for essential topics in a non-blocking way
-      setTimeout(() => {
-        fetchEssentialTopicsTokens(userObject);
-      }, 0);
+      // Fetch essential topics tokens once at login
+      try {
+        const importantTopics = ["lobby", "main-chat"];
+        for (const topic of importantTopics) {
+          try {
+            console.log(`Prefetching token for topic: ${topic}`);
+            const topicsResponse = await authService.getTopicsToken(
+              topic,
+              response.idToken
+            );
+            const topicsExpiresAt =
+              Date.now() + topicsResponse.expiration * 1000;
+
+            // Update the user object with the new token
+            setUser((prevUser) => {
+              if (!prevUser) return null;
+              return {
+                ...prevUser,
+                topicsTokens: {
+                  ...prevUser.topicsTokens,
+                  [topic]: {
+                    token: topicsResponse.token,
+                    expiresAt: topicsExpiresAt,
+                  },
+                },
+              };
+            });
+
+            // Update in localStorage too
+            const storedUser = localStorage.getItem(TOKEN_KEY);
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser) as User;
+              parsedUser.topicsTokens = {
+                ...parsedUser.topicsTokens,
+                [topic]: {
+                  token: topicsResponse.token,
+                  expiresAt: topicsExpiresAt,
+                },
+              };
+              localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));
+            }
+
+            console.log(`Successfully stored token for topic: ${topic}`);
+          } catch (topicsError) {
+            console.error(
+              `Failed to fetch token for topic: ${topic}`,
+              topicsError
+            );
+            // Continue with other topics even if one fails
+          }
+        }
+      } catch (error) {
+        console.error("Error prefetching topic tokens:", error);
+        // Don't fail the sign in if token fetching fails
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in");
+      console.error("Sign in error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to sign in";
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -189,7 +201,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.signUp(credentials);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign up");
+      console.error("Sign up error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to sign up";
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -203,9 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.confirmSignUp(request);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to confirm sign up"
-      );
+      console.error("Confirm sign up error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to confirm sign up";
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -219,11 +235,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.forgotPassword(email);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to process forgot password request"
-      );
+      console.error("Forgot password error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send reset code";
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -237,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authService.resetPassword(request);
     } catch (err) {
+      console.error("Reset password error:", err);
       setError(err instanceof Error ? err.message : "Failed to reset password");
       throw err;
     } finally {
@@ -245,29 +261,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = () => {
+    // Clear all tokens
     setUser(null);
+    tokenCache.current = {};
+    pendingTokenFetches.current = {};
     localStorage.removeItem(TOKEN_KEY);
   };
 
-  const getTopicsToken = async (topic: string, retryAttempt: number = 0): Promise<string> => {
+  // Cache used to store tokens during the current session to avoid duplicate API calls
+  const tokenCache = useRef<Record<string, {token: string, expiresAt: number}>>({});
+
+  const getTopicsToken = async (
+    topic: string,
+    retryAttempt: number = 0
+  ): Promise<string> => {
     if (!user) {
       throw new Error("User not authenticated");
     }
 
-    // Check if we already have a valid topics token in memory
+    // First, check in-memory cache
+    if (
+      tokenCache.current[topic] &&
+      tokenCache.current[topic].expiresAt > Date.now()
+    ) {
+      return tokenCache.current[topic].token;
+    }
+
+    // Then check if we already have a valid topics token in the user object
     if (
       user.topicsTokens &&
       user.topicsTokens[topic] &&
       user.topicsTokens[topic].expiresAt > Date.now()
     ) {
-      // Return cached token if it's still valid
+      // Store in our session cache and return
+      tokenCache.current[topic] = user.topicsTokens[topic];
       return user.topicsTokens[topic].token;
     }
+
+    // Check if we're already fetching this token
+    if (pendingTokenFetches.current[topic]) {
+      console.log(`Already fetching token for ${topic}, waiting...`);
+      // Wait a bit and retry
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      // If we're still fetching, wait more or continue
+      if (pendingTokenFetches.current[topic]) {
+        if (retryAttempt < 3) {
+          return getTopicsToken(topic, retryAttempt + 1);
+        }
+      }
+    }
+
+    // Mark this token as being fetched
+    pendingTokenFetches.current[topic] = true;
 
     try {
       // Fetch a new token if we don't have one or it's expired
       const response = await authService.getTopicsToken(topic, user.idToken);
       const topicsExpiresAt = Date.now() + response.expiration * 1000;
+
+      // Store in memory cache first
+      tokenCache.current[topic] = {
+        token: response.token,
+        expiresAt: topicsExpiresAt
+      };
 
       // Update the user object with the new token
       setUser((prevUser) => {
@@ -285,11 +341,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       });
 
+      // Update in localStorage too to persist the token
+      const storedUser = localStorage.getItem(TOKEN_KEY);
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser) as User;
+        parsedUser.topicsTokens = {
+          ...parsedUser.topicsTokens,
+          [topic]: {
+            token: response.token,
+            expiresAt: topicsExpiresAt,
+          },
+        };
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));
+      }
+
       return response.token;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to get topics token";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to get topics token";
       console.error(`Failed to get topics token for ${topic}:`, errorMessage);
-      
+
       // If this might be a token expiration issue and we haven't exceeded retry attempts
       if (retryAttempt < 1 && user?.refreshToken) {
         console.log("Attempting to refresh auth token and retry");
@@ -298,13 +369,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const refreshResponse = await authService.refreshToken({
             refreshToken: user.refreshToken,
           });
-          
+
           const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
-          
+
           // Update user with new tokens
           setUser((prevUser) => {
             if (!prevUser) return null;
-            
+
             return {
               ...prevUser,
               idToken: refreshResponse.idToken,
@@ -313,12 +384,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               expiresAt,
             };
           });
-          
-          console.log("Successfully refreshed auth token, retrying topics token fetch");
+
+          console.log(
+            "Successfully refreshed auth token, retrying topics token fetch"
+          );
+
+          // Clear token cache for this topic
+          delete tokenCache.current[topic];
           
           // Retry the topics token fetch with the new ID token
           // Small delay to ensure state update has completed
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           return getTopicsToken(topic, retryAttempt + 1);
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError);
@@ -327,9 +403,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Authentication expired. Please sign in again.");
         }
       }
-      
+
       setError(errorMessage);
       throw err;
+    } finally {
+      // Always clear the pending flag
+      pendingTokenFetches.current[topic] = false;
     }
   };
 

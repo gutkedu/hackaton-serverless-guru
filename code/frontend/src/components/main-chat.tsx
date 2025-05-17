@@ -29,9 +29,7 @@ export default function MainChat() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   // Track sent message IDs to avoid duplicates
   const sentMessageIds = useRef<Set<string>>(new Set());
-  // Add a retry counter to prevent infinite reconnection attempts
-  const reconnectAttempts = useRef<number>(0);
-  const MAX_RECONNECT_ATTEMPTS = 5;
+  // We've removed the automatic retry mechanism in favor of a manual reconnect button
 
   // Define the subscription error handler function
   const handleSubscriptionError = (error: any) => {
@@ -40,55 +38,15 @@ export default function MainChat() {
     setError(`Subscription error: ${errorMessage}`);
     setIsConnected(false);
 
-    // Check if the error is due to expired token and try to reconnect
+    // No automatic reconnection - just set the error state so user can manually reconnect
     if (
       errorMessage.includes("token is expired") ||
       errorMessage.includes("token expired") ||
       errorMessage.includes("Authorization token")
     ) {
-      // Increment reconnect attempts
-      reconnectAttempts.current += 1;
-
-      if (reconnectAttempts.current <= MAX_RECONNECT_ATTEMPTS) {
-        console.log(
-          `Token expired, attempting to reconnect (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})...`
-        );
-
-        // Clear all possible token caches to force refresh
-        localStorage.removeItem("topics_tokens");
-        localStorage.removeItem("momento-token-main-chat");
-
-        // Try reconnecting after a short delay with exponential backoff
-        const backoffDelay = Math.min(
-          1000 * Math.pow(1.5, reconnectAttempts.current - 1),
-          10000
-        );
-        setError(
-          `Authentication token expired. Reconnecting (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})...`
-        );
-
-        setTimeout(() => {
-          if (user) {
-            // For security, clear authentication tokens if they've expired
-            if (reconnectAttempts.current >= 3) {
-              console.warn(
-                "Multiple reconnection attempts - refreshing auth state"
-              );
-              // Force a refresh of all tokens, not just Momento tokens
-              localStorage.removeItem("auth_tokens");
-            }
-
-            initTopicClient();
-          }
-        }, backoffDelay);
-      } else {
-        console.error(
-          `Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Please refresh the page.`
-        );
-        setError(
-          `Authentication failed after ${MAX_RECONNECT_ATTEMPTS} attempts. Please refresh the page or sign in again.`
-        );
-      }
+      setError(
+        `Authentication token expired. Please click "Reconnect" to reestablish connection.`
+      );
     }
   };
 
@@ -98,6 +56,9 @@ export default function MainChat() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Use a ref to track the last token we used to avoid unnecessary reinitializations
+  const lastTokenUsed = useRef<string | null>(null);
 
   // Define initTopicClient function outside useEffect so it can be called from elsewhere
   const initTopicClient = async () => {
@@ -111,6 +72,14 @@ export default function MainChat() {
         return;
       }
 
+      // Don't reinitialize with the same token we already have
+      if (token === lastTokenUsed.current && topicClientRef.current && isConnected) {
+        console.log("Already initialized with this token, skipping");
+        return;
+      }
+      
+      lastTokenUsed.current = token;
+      
       // Create a new topic client
       const client = new TopicClient({
         configuration: TopicConfigurations.Browser.latest(),
@@ -119,8 +88,6 @@ export default function MainChat() {
 
       topicClientRef.current = client;
       setIsConnected(true);
-      // Reset reconnection attempts counter on successful connection
-      reconnectAttempts.current = 0;
 
       // Subscribe to the main-chat topic
       const response = await client.subscribe(
@@ -137,43 +104,15 @@ export default function MainChat() {
         setError(`Failed to subscribe: ${errorMessage}`);
         setIsConnected(false);
 
-        // Check if the error is due to expired token and try to reconnect
+        // No automatic reconnection - let user handle manually with the reconnect button
         if (
           errorMessage.includes("token is expired") ||
           errorMessage.includes("token expired") ||
           errorMessage.includes("Authorization token")
         ) {
-          // Increment reconnect attempts
-          reconnectAttempts.current += 1;
-
-          if (reconnectAttempts.current <= MAX_RECONNECT_ATTEMPTS) {
-            console.log(
-              `Token expired in response, attempting to reconnect (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})...`
-            );
-            // Clear token from localStorage to force refresh
-            localStorage.removeItem("topics_tokens");
-            // Try reconnecting after a short delay with exponential backoff
-            const backoffDelay = Math.min(
-              1000 * Math.pow(1.5, reconnectAttempts.current - 1),
-              10000
-            );
-            setError(
-              `Authentication token expired. Reconnecting (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})...`
-            );
-
-            setTimeout(() => {
-              if (user) {
-                initTopicClient();
-              }
-            }, backoffDelay);
-          } else {
-            console.error(
-              `Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Please refresh the page.`
-            );
-            setError(
-              `Authentication failed after ${MAX_RECONNECT_ATTEMPTS} attempts. Please refresh the page or sign in again.`
-            );
-          }
+          setError(
+            `Authentication token expired. Please click "Reconnect" to reestablish connection.`
+          );
         }
       }
     } catch (err) {
@@ -187,15 +126,19 @@ export default function MainChat() {
     }
   };
 
-  // Initialize the topic client when the component mounts or when user/getToken changes
+  // Use a ref to track if the component has already been initialized
+  const isInitialized = useRef(false);
+
+  // Initialize the topic client when the component mounts or when user changes
   useEffect(() => {
-    if (user) {
+    // Only initialize if we have a user and haven't initialized yet
+    if (user && !isInitialized.current) {
+      isInitialized.current = true; // Mark as initialized
       initTopicClient();
     }
 
     // Clean up subscription when component unmounts
     return () => {
-      // Store reference to client to avoid "ref changed" warning
       const currentClient = topicClientRef.current;
 
       if (currentClient) {
@@ -207,11 +150,9 @@ export default function MainChat() {
           console.error("Error cleaning up topic client:", e);
         }
       }
-
-      // We don't need to clear sentMessageIds on unmount since the component
-      // will be recreated with a fresh Set when remounted
     };
-  }, [user, getToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only depend on user to prevent unnecessary reinitializations
 
   const handleMessageReceived = (item: TopicItem) => {
     try {
@@ -310,51 +251,8 @@ export default function MainChat() {
               onClick={() => {
                 // Reset error first
                 setError("Reconnecting to chat...");
-                // Clear tokens to force refresh
-                localStorage.removeItem("topics_tokens");
-                // Reset counter to allow full reconnection attempts
-                reconnectAttempts.current = 0;
-                // Re-initialize the connection
-                const init = async () => {
-                  try {
-                    // Get the main-chat token
-                    const token = await getToken("main-chat");
-                    if (!token) {
-                      setError("Failed to get token for main-chat");
-                      return;
-                    }
-
-                    // Create a new topic client
-                    const client = new TopicClient({
-                      configuration: TopicConfigurations.Browser.latest(),
-                      credentialProvider: CredentialProvider.fromString(token),
-                    });
-
-                    topicClientRef.current = client;
-                    setIsConnected(true);
-                    reconnectAttempts.current = 0;
-
-                    // Re-subscribe to the topic
-                    await client.subscribe(
-                      "hackaton-main-chat-cache",
-                      "main-chat",
-                      {
-                        onItem: handleMessageReceived,
-                        onError: handleSubscriptionError,
-                      }
-                    );
-                  } catch (err) {
-                    console.error("Reconnect failed:", err);
-                    setError(
-                      `Reconnection failed: ${
-                        err instanceof Error ? err.message : "Unknown error"
-                      }`
-                    );
-                    setIsConnected(false);
-                  }
-                };
-
-                init();
+                // Simply initialize the topic client with a fresh token
+                initTopicClient();
               }}
               className="bg-blue-700 text-xs text-white px-2 py-1 rounded hover:bg-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-300"
             >

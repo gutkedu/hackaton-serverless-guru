@@ -35,7 +35,7 @@ Authorization: Bearer {{idToken}}
 ### Create new lobby
 POST {{url}}/game/lobbies/create
 Content-Type: {{contentType}}
-Authorization: {{idToken}}
+Authorization: Bearer {{idToken}}
 
 {
   "name": "Test Lobby",
@@ -55,6 +55,6 @@ Authorization: Bearer {{idToken}}
 ### Leave lobby
 POST {{url}}/game/lobbies/leave
 Content-Type: {{contentType}}
-Authorization: {{idToken}}
+Authorization: Bearer {{idToken}}
 
 {}

@@ -4,30 +4,15 @@ import { useAuth } from "@/contexts/auth-context";
 import ProtectedRoute from "@/components/protected-route";
 import { useRouter } from "next/navigation";
 import { useTopicsToken } from "@/hooks/use-topics-token";
-import { useEffect } from "react";
 import MainChat from "@/components/main-chat";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { signOut } = useAuth();
   const router = useRouter();
 
-  // Use the hook to ensure tokens are fetched and stored in localStorage
-  const { getToken } = useTopicsToken();
-
-  // Prefetch tokens on component mount
-  useEffect(() => {
-    const prefetchTokens = async () => {
-      try {
-        // This will store the tokens in localStorage via the hook
-        await getToken("lobby");
-        await getToken("main-chat");
-      } catch (error) {
-        console.error("Error prefetching tokens:", error);
-      }
-    };
-
-    prefetchTokens();
-  }, [getToken]);
+  // Just initialize the hook to trigger the auto-fetching mechanism
+  useTopicsToken();
 
   const handleSignOut = () => {
     signOut();
@@ -45,7 +30,13 @@ export default function DashboardPage() {
                   Dashboard
                 </h1>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/dashboard/lobbies"
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Game Lobbies
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -66,6 +57,23 @@ export default function DashboardPage() {
               <p className="text-gray-600 mb-6">
                 You are successfully authenticated!
               </p>
+
+              {/* Game Lobbies Card */}
+              <div className="bg-blue-50 p-4 rounded-lg mb-6 shadow-sm">
+                <h3 className="text-lg font-medium text-blue-800 mb-2">
+                  Game Lobbies
+                </h3>
+                <p className="text-blue-700 mb-4">
+                  Join existing game lobbies or create your own to play with
+                  friends!
+                </p>
+                <a
+                  href="/dashboard/lobbies"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  View Lobbies
+                </a>
+              </div>
 
               {/* Main Chat Component */}
               <MainChat />
