@@ -12,8 +12,8 @@ cd $ROOT_DIR
 echo "Building Docker image with cache-busting..."
 
 # Build Docker image with build args for cache busting
+# no cache
 docker build \
-  --no-cache \
   --build-arg BUILD_DATE="$BUILD_DATE" \
   -t $IMAGE_NAME:latest \
   -f Dockerfile .

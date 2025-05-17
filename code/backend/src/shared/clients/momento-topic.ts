@@ -2,12 +2,21 @@ import { TopicConfigurations, CredentialProvider, TopicClient } from '@gomomento
 
 let client: TopicClient | null = null
 
-export const momentoTopicClient = (apiKey: string): TopicClient => {
+const DEFAULT_CLIENT_TOPIC_TIMEOUT = 5 * 1000 // 5s
+
+interface TopicClientOptions {
+  apiKey: string
+  timeoutInMs?: number
+}
+
+export const momentoTopicClient = ({ apiKey, timeoutInMs }: TopicClientOptions): TopicClient => {
   if (client) {
     return client
   }
   client = new TopicClient({
-    configuration: TopicConfigurations.Lambda.latest(),
+    configuration: TopicConfigurations.Default.latest().withClientTimeoutMillis(
+      timeoutInMs ?? DEFAULT_CLIENT_TOPIC_TIMEOUT
+    ),
     credentialProvider: CredentialProvider.fromString(apiKey)
   })
   return client

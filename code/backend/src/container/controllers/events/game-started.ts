@@ -18,14 +18,15 @@ export async function gameStartedController(request: FastifyRequest, reply: Fast
 
     const payload = request.body as EventBridgeEvent<EventBridgeType.GAME_STARTED, GameStartedDetail>
 
-    const useCase = makeGameListenerUseCase(env.MOMENTO_API_KEYS.MOMENTO_USER_USER_KEY)
+    const useCase = makeGameListenerUseCase()
 
     await useCase.execute({
       gameId: payload.detail.data.gameId,
       lobbyId: payload.detail.data.lobbyId,
       content: payload.detail.data.content,
       type: GameEventType.GAME_STARTED,
-      timestamp: payload.detail.data.timestamp
+      timestamp: payload.detail.data.timestamp,
+      momentoApiKey: env.MOMENTO_API_KEYS.MOMENTO_USER_USER_KEY
     })
 
     return reply.status(200).send({

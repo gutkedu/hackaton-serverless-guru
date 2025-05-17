@@ -1,6 +1,7 @@
 @url={{baseUrl}}
 @contentType = application/json
 @authToken = {{signin.response.body.accessToken}}
+@idToken = {{signin.response.body.idToken}}
 
 ### Sign in to get token
 # @name signin
@@ -13,8 +14,8 @@ Content-Type: application/json
 }
 
 ### Get Topics Token
-GET {{url}}/auth/topics-token
-Authorization: Bearer {{signin.response.body.accessToken}}
+GET {{url}}/auth/topics-token?topic=lobby
+Authorization: {{idToken}}
 
 ### Sign Up
 POST {{url}}/auth/signup

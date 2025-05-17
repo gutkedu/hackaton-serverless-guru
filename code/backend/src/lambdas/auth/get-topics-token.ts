@@ -1,11 +1,10 @@
-import { APIGatewayProxyResult } from 'aws-lambda'
+import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { handleApiGwError } from '@/shared/errors/handle-api-gw-error.js'
 import middy from '@middy/core'
 import secretsManager from '@middy/secrets-manager'
 import { MiddyContext } from '@/shared/middy/middy-context.js'
 import { MomentoAuthClientProvider } from '@/providers/momento-auth/momento-auth-client-provider.js'
-import { parser } from '@aws-lambda-powertools/parser/middleware'
 import { z } from 'zod'
 import { ClientTopicContexts } from '@/core/enums/topic-contexts.js'
 import { topicContextToCacheMapper } from '@/shared/mappers/topic-contexts-to-caches.js'
@@ -17,16 +16,16 @@ const getTopicsTokenSchema = z.object({
   topic: z.nativeEnum(ClientTopicContexts)
 })
 
-type GetTopicsTokenSchema = z.infer<typeof getTopicsTokenSchema>
-
-const handler = async (event: GetTopicsTokenSchema, context: MiddyContext): Promise<APIGatewayProxyResult> => {
+const handler = async (event: APIGatewayEvent, context: MiddyContext): Promise<APIGatewayProxyResult> => {
   logger.appendKeys({
     requestId: context.awsRequestId
   })
 
   logger.info('getting momento token', { event, context })
 
-  const cache = topicContextToCacheMapper(event.topic)
+  const { topic } = getTopicsTokenSchema.parse(event.queryStringParameters || {})
+
+  const cache = topicContextToCacheMapper(topic)
 
   logger.info(`Getting token for cache ${cache}`, { event })
 
@@ -55,11 +54,6 @@ export const getTopicsTokenHandler = middy(handler)
         region: process.env.AWS_REGION
       },
       setToContext: true
-    })
-  )
-  .use(
-    parser({
-      schema: getTopicsTokenSchema
     })
   )
   .onError((request) => {

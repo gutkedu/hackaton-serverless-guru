@@ -14,7 +14,7 @@ DOCKER_DIR="${ROOT_DIR}"
 
 # Step 1: Build the Docker image locally with no cache
 echo "Building Docker image with cache-busting..."
-docker build --no-cache -t $ECR_REPOSITORY_NAME:$IMAGE_TAG --build-arg NODE_ENV=production --build-arg BUILD_DATE="$IMAGE_TAG" -f "$DOCKER_DIR/Dockerfile" "$ROOT_DIR"
+docker build -t $ECR_REPOSITORY_NAME:$IMAGE_TAG --build-arg NODE_ENV=production --build-arg BUILD_DATE="$IMAGE_TAG" -f "$DOCKER_DIR/Dockerfile" "$ROOT_DIR"
 
 # Step 2: Create ECR repository if it doesn't exist
 echo "Creating ECR repository if it doesn't exist..."

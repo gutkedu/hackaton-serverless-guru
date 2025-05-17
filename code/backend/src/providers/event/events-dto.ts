@@ -1,8 +1,8 @@
 export enum EventBridgeType {
-  GAME_STARTED = 'game-started',
-  GAME_ENDED = 'game-ended',
-  PLAYER_JOINED = 'player-joined',
-  PLAYER_LEFT = 'player-left'
+  GAME_STARTED = 'gameStarted',
+  GAME_ENDED = 'gameEnded',
+  PLAYER_JOINED = 'playerJoined',
+  PLAYER_LEFT = 'playerLeft'
 }
 
-export const eventSource = 'game-service'
+export const eventSource = 'com.gameserviceapp'

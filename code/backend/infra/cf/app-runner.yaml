@@ -213,9 +213,9 @@ Resources:
       EventBusName: !ImportValue "StatefulStack-EventBusName"
       EventPattern:
         source:
-          - "game-service"
+          - "com.gameserviceapp"
         detail-type:
-          - "game-started"
+          - gameStarted
       State: ENABLED
       Targets:
         - Id: ApiGatewayTarget
