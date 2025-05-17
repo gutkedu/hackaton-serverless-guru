@@ -17,7 +17,7 @@ export class GetCurrentUserInfoUseCase {
 
   async execute({ username }: GetCurrentUserInfoRequest): Promise<GetCurrentUserInfoResponse> {
     const player = await this.playerRepository.getByUsername(username)
-    
+
     if (!player) {
       throw new BusinessError('Player not found')
     }

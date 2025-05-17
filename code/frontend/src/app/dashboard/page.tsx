@@ -6,13 +6,35 @@ import { useRouter } from "next/navigation";
 import { useTopicsToken } from "@/hooks/use-topics-token";
 import MainChat from "@/components/main-chat";
 import Link from "next/link";
+import { userService, UserInfo } from "@/lib/user-service";
+import { useState, useEffect, useCallback } from "react";
 
 export default function DashboardPage() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
+  const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Just initialize the hook to trigger the auto-fetching mechanism
   useTopicsToken();
+
+  const fetchUserInfo = useCallback(async () => {
+    if (!user?.idToken) return;
+
+    setIsLoading(true);
+    try {
+      const userInfo = await userService.getCurrentUser(user.idToken);
+      setCurrentUserInfo(userInfo);
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, [fetchUserInfo]);
 
   const handleSignOut = () => {
     signOut();
@@ -57,6 +79,61 @@ export default function DashboardPage() {
               <p className="text-gray-600 mb-6">
                 You are successfully authenticated!
               </p>
+
+              {/* User Information Card */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  User Information
+                </h3>
+
+                {isLoading ? (
+                  <div className="animate-pulse flex space-x-4">
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ) : currentUserInfo ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <span className="text-gray-500">Username:</span>
+                      <span className="ml-2 font-medium">
+                        {currentUserInfo.username}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-gray-500">Email:</span>
+                      <span className="ml-2">{currentUserInfo.email}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-gray-500">Lobby Status:</span>
+                      {currentUserInfo.currentLobbyId ? (
+                        <span className="ml-2 text-green-600 font-medium">
+                          In a lobby
+                        </span>
+                      ) : (
+                        <span className="ml-2 text-gray-700">
+                          Not in a lobby
+                        </span>
+                      )}
+                    </div>
+                    {currentUserInfo.currentLobbyId && (
+                      <div className="mt-2">
+                        <Link
+                          href={`/dashboard/lobbies/${currentUserInfo.currentLobbyId}`}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        >
+                          Go to Current Lobby
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">
+                    Unable to load user information
+                  </div>
+                )}
+              </div>
 
               {/* Game Lobbies Card */}
               <div className="bg-blue-50 p-4 rounded-lg mb-6 shadow-sm">

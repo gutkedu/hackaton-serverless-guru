@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { lobbyService, Lobby } from "@/lib/lobby-service";
+import { userService, UserInfo } from "@/lib/user-service";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,6 +18,7 @@ export default function LobbiesPage() {
   const [newLobbyName, setNewLobbyName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreatingLobby, setIsCreatingLobby] = useState(false);
+  const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
 
   // Function to fetch lobbies
   const fetchLobbies = useCallback(async () => {
@@ -50,10 +52,28 @@ export default function LobbiesPage() {
     }
   }, [user]);
 
+  // Function to fetch user info
+  const fetchUserInfo = useCallback(async () => {
+    if (!user?.idToken) return;
+
+    try {
+      const userInfo = await userService.getCurrentUser(user.idToken);
+      setCurrentUserInfo(userInfo);
+
+      // If user is already in a lobby, redirect to that lobby
+      if (userInfo.currentLobbyId) {
+        router.push(`/dashboard/lobbies/${userInfo.currentLobbyId}`);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info:", err);
+    }
+  }, [user, router]);
+
   // Fetch lobbies when component mounts
   useEffect(() => {
     fetchLobbies();
-  }, [fetchLobbies]);
+    fetchUserInfo();
+  }, [fetchLobbies, fetchUserInfo]);
 
   // Handle creating a new lobby
   const handleCreateLobby = async (e: React.FormEvent) => {
@@ -133,6 +153,33 @@ export default function LobbiesPage() {
         </div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Check if user is already in a lobby */}
+          {currentUserInfo?.currentLobbyId && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-yellow-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    You are already in a lobby. Redirecting to your current
+                    lobby...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Create Lobby Form */}
           <div className="bg-white p-6 shadow sm:rounded-lg mb-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -178,7 +225,11 @@ export default function LobbiesPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={isCreatingLobby || !newLobbyName.trim()}
+                  disabled={
+                    isCreatingLobby ||
+                    !newLobbyName.trim() ||
+                    !!currentUserInfo?.currentLobbyId
+                  }
                   className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
                 >
                   {isCreatingLobby ? "Creating..." : "Create Lobby"}
@@ -264,11 +315,14 @@ export default function LobbiesPage() {
                             disabled={
                               (lobby.status !== "WAITING" &&
                                 lobby.status !== "OPEN") ||
-                              lobby.currentPlayers >= lobby.maxPlayers
+                              lobby.currentPlayers >= lobby.maxPlayers ||
+                              !!currentUserInfo?.currentLobbyId
                             }
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300"
                           >
-                            Join
+                            {currentUserInfo?.currentLobbyId
+                              ? "Already in Lobby"
+                              : "Join"}
                           </button>
                         </div>
                       </div>
