@@ -25,7 +25,6 @@ export async function gameStartedController(request: FastifyRequest, reply: Fast
       lobbyId: payload.detail.data.lobbyId,
       content: payload.detail.data.content,
       type: GameEventType.GAME_STARTED,
-      timestamp: payload.detail.data.timestamp,
       momentoApiKey: env.MOMENTO_API_KEYS.MOMENTO_USER_USER_KEY
     })
 

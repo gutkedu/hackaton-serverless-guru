@@ -14,7 +14,9 @@ export class MomentoTopicsProvider implements TopicsProvider {
   constructor(apiKey: string, cacheName: string) {
     this.apiKey = apiKey
     this.topicsCacheName = cacheName
-    this.topicClient = momentoTopicClient(this.apiKey)
+    this.topicClient = momentoTopicClient({
+      apiKey: this.apiKey
+    })
   }
   async publish(topic: string, message: string): Promise<void> {
     try {
