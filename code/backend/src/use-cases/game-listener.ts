@@ -11,23 +11,23 @@ interface GameListenerInput {
   lobbyId: string
   gameId: string
   content: string
-  type: GameEventType
+  gameEvent: GameEventType
 }
 
 export class GameListenerUseCase {
   constructor() {}
 
-  async execute({ lobbyId, gameId, type, momentoApiKey }: GameListenerInput): Promise<void> {
+  async execute({ lobbyId, gameId, gameEvent, momentoApiKey }: GameListenerInput): Promise<void> {
+    const TIMEOUT_IN_MS = 5 * 60 * 1000 // 5 minutes
+
     try {
-      const topicClient = momentoTopicClient({ apiKey: momentoApiKey, timeoutInMs: 5 * 60 * 1000 })
+      const topicClient = momentoTopicClient({ apiKey: momentoApiKey, timeoutInMs: TIMEOUT_IN_MS })
       const topicName = generateLobbyTopicName(lobbyId)
 
       logger.info(`Processing game event for lobby ${lobbyId}`, {
         gameId,
         topicName
       })
-
-      let finishExecution = false
 
       await topicClient.subscribe(AvailableMomentoCaches.LOBBY, topicName, {
         onItem: (data) => {
@@ -44,28 +44,22 @@ export class GameListenerUseCase {
               eventType: event.type,
               gameId: event.gameId
             })
-
-            setTimeout(async () => {
-              finishExecution = true
-            }, 4 * 60 * 1000)
-
-            if (finishExecution) {
-              logger.info('Game listener completed scheduled time', {
-                gameId,
-                lobbyId
-              })
-              return
-            }
           } catch (err) {
             logger.error('Error processing message', {
               error: err,
               topicName
             })
           }
+        },
+        onError: (error) => {
+          logger.error('Error subscribing to topic', {
+            error,
+            topicName
+          })
         }
       })
     } catch (error) {
-      logger.error('Error processing game event', { error, lobbyId, gameId, type })
+      logger.error('Error processing game event', { error, lobbyId, gameId, gameEvent })
       throw error
     }
   }
