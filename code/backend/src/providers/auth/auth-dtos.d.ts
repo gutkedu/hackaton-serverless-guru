@@ -14,4 +14,5 @@ export interface RefreshTokenResult {
   idToken: string | undefined
   accessToken: string | undefined
   expiresIn: number | undefined
+  refreshToken: string | undefined
 }

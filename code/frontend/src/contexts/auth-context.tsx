@@ -5,7 +5,6 @@ import {
   authService,
   SignInCredentials,
   SignUpCredentials,
-  AuthResponse,
   ConfirmSignUpRequest,
   ResetPasswordRequest,
 } from "../lib/auth-service";
@@ -17,6 +16,7 @@ interface User {
   expiresAt: number;
   topicsTokens: Record<string, { token: string; expiresAt: number }>;
   username?: string;
+  sub?: string;
 }
 
 interface AuthContextType {
@@ -68,6 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
 
+              // Parse the JWT token to get the sub
+              const tokenPayload = JSON.parse(
+                atob(refreshResponse.idToken.split(".")[1])
+              );
+              const sub = tokenPayload.sub;
+
               // Update the user with the new tokens
               const updatedUser = {
                 ...parsedUser,
@@ -75,14 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 accessToken: refreshResponse.accessToken,
                 refreshToken: refreshResponse.refreshToken,
                 expiresAt,
+                sub,
               };
 
               // Save to localStorage
               localStorage.setItem(TOKEN_KEY, JSON.stringify(updatedUser));
               setUser(updatedUser);
-              console.log("Successfully refreshed token");
+              console.log("Successfully refreshed tokens");
             } catch (refreshError) {
-              console.error("Failed to refresh token:", refreshError);
+              console.error("Failed to refresh tokens:", refreshError);
               // Clear user data if refresh fails
               localStorage.removeItem(TOKEN_KEY);
             }
@@ -114,6 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Extract username from email for display purposes
       const username = credentials.email.split("@")[0];
 
+      // Parse the JWT token to get the sub
+      const tokenPayload = JSON.parse(atob(response.idToken.split(".")[1]));
+      const sub = tokenPayload.sub;
+
       // Create the user object
       const userObject: User = {
         idToken: response.idToken,
@@ -121,7 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshToken: response.refreshToken,
         expiresAt,
         topicsTokens: {},
-        username, // Add username
+        username,
+        sub,
       };
 
       // Save to state and localStorage
@@ -374,6 +386,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
 
+          // Parse the JWT token to get the sub
+          const tokenPayload = JSON.parse(
+            atob(refreshResponse.idToken.split(".")[1])
+          );
+          const sub = tokenPayload.sub;
+
           // Update user with new tokens
           setUser((prevUser) => {
             if (!prevUser) return null;
@@ -384,17 +402,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               accessToken: refreshResponse.accessToken,
               refreshToken: refreshResponse.refreshToken,
               expiresAt,
+              sub,
             };
           });
 
           console.log(
-            "Successfully refreshed auth token, retrying topics token fetch"
+            "Successfully refreshed auth tokens, retrying topics token fetch"
           );
 
           // Clear token cache for this topic
           delete tokenCache.current[topic];
 
-          // Retry the topics token fetch with the new ID token
+          // Retry the topics token fetch with the new tokens
           // Small delay to ensure state update has completed
           await new Promise((resolve) => setTimeout(resolve, 100));
           return getTopicsToken(topic, retryAttempt + 1);

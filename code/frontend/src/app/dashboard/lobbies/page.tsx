@@ -103,7 +103,9 @@ export default function LobbiesPage() {
 
       console.log("Successfully created lobby:", result);
       setNewLobbyName("");
-      await fetchLobbies(); // Refresh lobby list
+      
+      // Redirect to the newly created lobby
+      router.push(`/dashboard/lobbies/${result.id}`);
     } catch (err) {
       console.error("Failed to create lobby:", err);
       const errorMessage =

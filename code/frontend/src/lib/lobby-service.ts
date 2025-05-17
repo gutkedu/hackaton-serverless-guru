@@ -10,7 +10,7 @@ export interface Lobby {
   currentPlayers: number;
   createdAt: string;
   status: string;
-  ownerId: string;
+  hostId: string;
   ownerUsername?: string;
 }
 

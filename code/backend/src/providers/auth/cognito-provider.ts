@@ -186,7 +186,8 @@ export class CognitoProvider implements AuthProvider {
       return {
         idToken: result.AuthenticationResult?.IdToken,
         accessToken: result.AuthenticationResult?.AccessToken,
-        expiresIn: result.AuthenticationResult?.ExpiresIn
+        expiresIn: result.AuthenticationResult?.ExpiresIn,
+        refreshToken: result.AuthenticationResult?.RefreshToken
       }
     } catch (error) {
       logger.error('Error refreshing token', { error })

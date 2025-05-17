@@ -113,7 +113,19 @@ export default function LobbyDetailsPage() {
   };
 
   // Check if the current user is the owner of the lobby
-  const isOwner = lobby?.ownerId === user?.username;
+  const isOwner = lobby?.hostId === user?.sub;
+  
+  // Add debug logging
+  useEffect(() => {
+    if (lobby && user) {
+      console.log('Lobby owner check:', {
+        hostId: lobby.hostId,
+        userId: user.sub,
+        username: user.username,
+        isOwner: lobby.hostId === user.sub
+      });
+    }
+  }, [lobby, user]);
 
   return (
     <ProtectedRoute>
@@ -211,7 +223,7 @@ export default function LobbyDetailsPage() {
                       Players
                     </dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {lobby.currentPlayers} / {lobby.maxPlayers}
+                      {Array.isArray(lobby.players) ? lobby.players.length : 0} / {lobby.maxPlayers}
                     </dd>
                   </div>
                   <div className="sm:col-span-1">
@@ -225,8 +237,7 @@ export default function LobbyDetailsPage() {
                   <div className="sm:col-span-1">
                     <dt className="text-sm font-medium text-gray-500">Owner</dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {lobby.ownerUsername || "Unknown"}
-                      {isOwner && " (You)"}
+                      {isOwner ? `${user?.username} (You)` : lobby.ownerUsername}
                     </dd>
                   </div>
                 </dl>
@@ -246,7 +257,6 @@ export default function LobbyDetailsPage() {
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-gray-900">
                             {player.username}
-                            {player.id === lobby.ownerId && " (Owner)"}
                             {player.id === user?.username && " (You)"}
                           </p>
                           {lobby.status === "PLAYING" && (
@@ -294,23 +304,12 @@ export default function LobbyDetailsPage() {
                       <div className="flex justify-end">
                         <button
                           onClick={handleStartGame}
-                          disabled={
-                            isStartingGame ||
-                            !Array.isArray(lobby.players) ||
-                            lobby.players.length < 2
-                          }
+                          disabled={isStartingGame}
                           className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
                         >
                           {isStartingGame ? "Starting Game..." : "Start Game"}
                         </button>
                       </div>
-
-                      {Array.isArray(lobby.players) &&
-                        lobby.players.length < 2 && (
-                          <p className="text-sm text-red-600">
-                            At least 2 players are needed to start the game.
-                          </p>
-                        )}
                     </div>
                   ) : (
                     <div className="text-center py-4">
