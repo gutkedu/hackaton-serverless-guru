@@ -10,6 +10,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProtectedRoute from "@/components/protected-route";
+import { GameEvent, GameEventType } from "@/lib/types/game-events";
 
 export default function LobbyDetailsPage() {
   const { user } = useAuth();
@@ -64,6 +65,63 @@ export default function LobbyDetailsPage() {
 
     return () => clearInterval(intervalId);
   }, [id, fetchLobbyDetails]);
+
+  // Add event handling function
+  const handleGameEvent = useCallback((event: GameEvent) => {
+    console.log('Received game event:', event);
+
+    switch (event.type) {
+      case GameEventType.GAME_STARTED:
+        // Redirect to game page or update UI
+        router.push(`/dashboard/game/${event.gameId}`);
+        break;
+      case GameEventType.PLAYER_JOINED:
+        // Refresh lobby details to show new player
+        fetchLobbyDetails();
+        break;
+      case GameEventType.PLAYER_LEFT:
+        // Refresh lobby details to remove player
+        fetchLobbyDetails();
+        break;
+      case GameEventType.GAME_ENDED:
+        // Handle game ended event
+        router.push("/dashboard/lobbies");
+        break;
+      case GameEventType.GAME_STATE_UPDATED:
+        // Update game state in UI
+        fetchLobbyDetails();
+        break;
+      case GameEventType.PLAYER_ACTION:
+        // Handle player actions if needed
+        break;
+    }
+  }, [router, fetchLobbyDetails]);
+
+  // Subscribe to game events
+  useEffect(() => {
+    if (!user?.idToken || !id) return;
+
+    // TODO: Initialize Momento Topics client and subscribe to events
+    const subscribeToEvents = async () => {
+      try {
+        // Example pseudo-code:
+        // const topicClient = await momentoTopicClient.initialize(user.idToken);
+        // const topicName = `lobby-${id}`;
+        // await topicClient.subscribe(topicName, handleGameEvent);
+      } catch (err) {
+        console.error('Failed to subscribe to game events:', err);
+        setError('Failed to connect to game events. Please refresh the page.');
+      }
+    };
+
+    subscribeToEvents();
+
+    // Cleanup subscription on unmount
+    return () => {
+      // TODO: Unsubscribe from events
+      // topicClient.unsubscribe(topicName);
+    };
+  }, [user, id, handleGameEvent]);
 
   // Handle starting the game
   const handleStartGame = async () => {
