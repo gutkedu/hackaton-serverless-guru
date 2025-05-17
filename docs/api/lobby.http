@@ -58,3 +58,8 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{idToken}}
 
 {}
+
+
+### Select user state
+GET {{url}}/game/me
+Authorization: Bearer {{idToken}}

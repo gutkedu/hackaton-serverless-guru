@@ -652,6 +652,47 @@ Resources:
           - '@aws-sdk/client-eventbridge'
           - '@gomomento/sdk'
 
+  CurrentUserInfoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: CurrentUserInfoFunction
+      Description: Returns current user information including login status and lobby membership
+      Handler: game/current-user-info.currentUserInfoHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/me
+            Method: GET
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/current-user-info.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
   ##########################################################################
   #                           Infra Functions                              #
   ##########################################################################
