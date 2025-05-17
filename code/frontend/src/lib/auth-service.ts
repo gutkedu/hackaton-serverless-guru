@@ -39,6 +39,8 @@ export interface RefreshTokenRequest {
 export interface TopicsTokenResponse {
   token: string;
   expiration: number;
+  cacheName: string;
+  endpoint: string;
 }
 
 class AuthService {

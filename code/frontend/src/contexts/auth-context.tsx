@@ -14,7 +14,11 @@ interface User {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
-  topicsTokens: Record<string, { token: string; expiresAt: number }>;
+  topicsTokens: Record<string, { 
+    token: string; 
+    expiresAt: number;
+    cacheName: string;
+  }>;
   username?: string;
   sub?: string;
 }
@@ -163,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   [topic]: {
                     token: topicsResponse.token,
                     expiresAt: topicsExpiresAt,
+                    cacheName: topicsResponse.cacheName,
                   },
                 },
               };
@@ -177,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 [topic]: {
                   token: topicsResponse.token,
                   expiresAt: topicsExpiresAt,
+                  cacheName: topicsResponse.cacheName,
                 },
               };
               localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));
@@ -282,7 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Cache used to store tokens during the current session to avoid duplicate API calls
   const tokenCache = useRef<
-    Record<string, { token: string; expiresAt: number }>
+    Record<string, { token: string; expiresAt: number; cacheName: string }>
   >({});
 
   const getTopicsToken = async (
@@ -337,6 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tokenCache.current[topic] = {
         token: response.token,
         expiresAt: topicsExpiresAt,
+        cacheName: response.cacheName,
       };
 
       // Update the user object with the new token
@@ -350,6 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             [topic]: {
               token: response.token,
               expiresAt: topicsExpiresAt,
+              cacheName: response.cacheName,
             },
           },
         };
@@ -364,6 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           [topic]: {
             token: response.token,
             expiresAt: topicsExpiresAt,
+            cacheName: response.cacheName,
           },
         };
         localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));

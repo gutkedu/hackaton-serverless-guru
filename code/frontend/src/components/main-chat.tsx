@@ -84,6 +84,13 @@ export default function MainChat() {
 
       lastTokenUsed.current = token;
 
+      // Get the cache name from the auth context
+      const cacheName = user?.topicsTokens?.["main-chat"]?.cacheName;
+      if (!cacheName) {
+        setError("Failed to get cache name for main-chat");
+        return;
+      }
+
       // Create a new topic client
       const client = new TopicClient({
         configuration: TopicConfigurations.Browser.latest(),
@@ -95,7 +102,7 @@ export default function MainChat() {
 
       // Subscribe to the main-chat topic
       const response = await client.subscribe(
-        "hackaton-main-chat-cache",
+        cacheName,
         "main-chat",
         {
           onItem: handleMessageReceived,
