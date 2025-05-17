@@ -44,9 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load user from localStorage on mount
+  // Load user from localStorage on mount and handle token refresh if needed
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
         const storedUser = localStorage.getItem(TOKEN_KEY);
         if (storedUser) {
@@ -56,13 +56,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (parsedUser.expiresAt > Date.now()) {
             setUser(parsedUser);
           } else {
-            // Token expired, try to refresh or logout
-            localStorage.removeItem(TOKEN_KEY);
-            // Could implement token refresh here
+            // Token expired, try to refresh
+            try {
+              console.log("Token expired, attempting to refresh...");
+              const refreshResponse = await authService.refreshToken({
+                refreshToken: parsedUser.refreshToken,
+              });
+              
+              const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
+              
+              // Update user with new tokens
+              const refreshedUser = {
+                ...parsedUser,
+                idToken: refreshResponse.idToken,
+                accessToken: refreshResponse.accessToken,
+                refreshToken: refreshResponse.refreshToken,
+                expiresAt,
+                // Reset topic tokens since they would also be expired
+                topicsTokens: {},
+              };
+              
+              setUser(refreshedUser);
+              console.log("Successfully refreshed authentication token");
+              
+              // Fetch new topic tokens after successful refresh
+              setTimeout(() => {
+                fetchEssentialTopicsTokens(refreshedUser);
+              }, 0);
+            } catch (refreshError) {
+              console.error("Failed to refresh token:", refreshError);
+              // Token refresh failed, force logout
+              localStorage.removeItem(TOKEN_KEY);
+              setUser(null);
+            }
           }
         }
       } catch (error) {
         console.error("Failed to load auth state:", error);
+        localStorage.removeItem(TOKEN_KEY);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -217,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
   };
 
-  const getTopicsToken = async (topic: string): Promise<string> => {
+  const getTopicsToken = async (topic: string, retryAttempt: number = 0): Promise<string> => {
     if (!user) {
       throw new Error("User not authenticated");
     }
@@ -255,9 +287,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return response.token;
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to get topics token"
-      );
+      const errorMessage = err instanceof Error ? err.message : "Failed to get topics token";
+      console.error(`Failed to get topics token for ${topic}:`, errorMessage);
+      
+      // If this might be a token expiration issue and we haven't exceeded retry attempts
+      if (retryAttempt < 1 && user?.refreshToken) {
+        console.log("Attempting to refresh auth token and retry");
+        try {
+          // Try to refresh the authentication token first
+          const refreshResponse = await authService.refreshToken({
+            refreshToken: user.refreshToken,
+          });
+          
+          const expiresAt = Date.now() + refreshResponse.expiresIn * 1000;
+          
+          // Update user with new tokens
+          setUser((prevUser) => {
+            if (!prevUser) return null;
+            
+            return {
+              ...prevUser,
+              idToken: refreshResponse.idToken,
+              accessToken: refreshResponse.accessToken,
+              refreshToken: refreshResponse.refreshToken,
+              expiresAt,
+            };
+          });
+          
+          console.log("Successfully refreshed auth token, retrying topics token fetch");
+          
+          // Retry the topics token fetch with the new ID token
+          // Small delay to ensure state update has completed
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return getTopicsToken(topic, retryAttempt + 1);
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          setError("Your session has expired. Please sign in again.");
+          signOut(); // Force logout on failed token refresh
+          throw new Error("Authentication expired. Please sign in again.");
+        }
+      }
+      
+      setError(errorMessage);
       throw err;
     }
   };

@@ -41,23 +41,27 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
       const fetchEssentialTokens = async () => {
         for (const topic of essentialTopics) {
           try {
-            if (!cachedTokens[topic]) {
+            // Check if we already have a valid token in the auth context
+            const hasValidToken = 
+              user.topicsTokens && 
+              topic in user.topicsTokens && 
+              user.topicsTokens[topic].expiresAt > Date.now();
+              
+            if (!hasValidToken) {
               console.log(`Auto-fetching token for ${topic}`);
-              const token = await getTopicsToken(topic);
-              setCachedTokens((prev) => ({
-                ...prev,
-                [topic]: token,
-              }));
+              await getTopicsToken(topic);
+              console.log(`Auto-fetched token for ${topic}`);
             }
           } catch (err) {
             console.error(`Failed to auto-fetch token for ${topic}:`, err);
+            // Continue with other topics even if one fails
           }
         }
       };
 
       fetchEssentialTokens();
     }
-  }, [user, getTopicsToken, cachedTokens]);
+  }, [user, getTopicsToken]);
 
   /**
    * Get a topics token for the specified topic, with built-in error handling
@@ -65,35 +69,44 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
    */
   const getToken = useCallback(
     async (topic: string = defaultTopic): Promise<string | null> => {
-      // Return from cache if available
-      if (cachedTokens[topic]) {
-        return cachedTokens[topic];
+      const currentTopic = topic || defaultTopic;
+      
+      // Check if we have a valid cached token
+      const hasValidCachedToken = 
+        user?.topicsTokens && 
+        currentTopic in (user.topicsTokens || {}) && 
+        (user.topicsTokens[currentTopic]?.expiresAt || 0) > Date.now();
+        
+      // Return from cache if available and still valid
+      if (hasValidCachedToken && user?.topicsTokens?.[currentTopic]?.token) {
+        return user.topicsTokens[currentTopic].token;
       }
 
       setIsLoading(true);
       setError(null);
 
       try {
-        const token = await getTopicsToken(topic);
+        console.log(`Fetching token for topic: ${currentTopic}`);
+        const token = await getTopicsToken(currentTopic);
 
-        // Cache the token for future use
-        setCachedTokens((prev) => ({
-          ...prev,
-          [topic]: token,
-        }));
+        if (!token) {
+          throw new Error("Failed to get a valid token");
+        }
 
+        // Cache the token for future use (handled by getTopicsToken)
+        console.log(`Successfully fetched token for topic: ${currentTopic}`);
         return token;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to get topics token";
         setError(errorMessage);
-        console.error(`Topics token error (${topic}):`, errorMessage);
+        console.error(`Topics token error (${currentTopic}):`, errorMessage);
         return null;
       } finally {
         setIsLoading(false);
       }
     },
-    [getTopicsToken, defaultTopic, cachedTokens]
+    [getTopicsToken, defaultTopic, user]
   );
 
   return {
