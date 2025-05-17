@@ -74,7 +74,7 @@ export default function MainChat() {
 
       // Don't reinitialize with the same token we already have
       if (
-        token === lastTokenUsed.current &&
+        token?.token === lastTokenUsed.current &&
         topicClientRef.current &&
         isConnected
       ) {
@@ -82,7 +82,7 @@ export default function MainChat() {
         return;
       }
 
-      lastTokenUsed.current = token;
+      lastTokenUsed.current = token?.token;
 
       // Get the cache name from the auth context
       const cacheName = user?.topicsTokens?.["main-chat"]?.cacheName;
@@ -94,7 +94,7 @@ export default function MainChat() {
       // Create a new topic client
       const client = new TopicClient({
         configuration: TopicConfigurations.Browser.latest(),
-        credentialProvider: CredentialProvider.fromString(token),
+        credentialProvider: CredentialProvider.fromString(token?.token),
       });
 
       topicClientRef.current = client;

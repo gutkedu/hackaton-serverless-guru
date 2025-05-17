@@ -38,9 +38,9 @@ export interface RefreshTokenRequest {
 
 export interface TopicsTokenResponse {
   token: string;
-  expiration: number;
-  cacheName: string;
   endpoint: string;
+  cacheName: string;
+  expiresAt: string;
 }
 
 class AuthService {
@@ -92,7 +92,7 @@ class AuthService {
       }
     );
     console.log(
-      `Successfully fetched topics token for ${topic} with expiration: ${response.expiration}`
+      `Successfully fetched topics token for ${topic} with expiration: ${response.expiresAt}`
     );
     return response;
   }

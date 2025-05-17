@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { useCallback, useRef, useState } from "react";
+import { TopicsTokenResponse } from "@/lib/auth-service";
 
 // Note: We're now relying solely on the auth context to manage tokens
 // and are not using localStorage directly in this hook
@@ -11,6 +12,7 @@ import { useCallback, useRef, useState } from "react";
  * Can either be used with manual fetching or with automatic prefetching
  * Tokens are now stored in localStorage for persistence
  */
+
 export function useTopicsToken(defaultTopic: string = "lobby") {
   const { user, getTopicsToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -34,21 +36,27 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
   const tokenRequestsMade = useRef<Record<string, boolean>>({});
 
   const getToken = useCallback(
-    async (topic: string = defaultTopic): Promise<string | null> => {
+    async (topic: string = defaultTopic): Promise<TopicsTokenResponse | null> => {
       const currentTopic = topic || defaultTopic;
+
+      // Helper function to check if a token is expired
+      const isTokenExpired = (token: TopicsTokenResponse) => {
+        const expiresAt = new Date(token.expiresAt).getTime();
+        return expiresAt <= Date.now();
+      };
 
       // Use existing token if available and valid
       if (
         user?.topicsTokens &&
         user.topicsTokens[currentTopic] &&
-        user.topicsTokens[currentTopic].expiresAt > Date.now()
+        !isTokenExpired(user.topicsTokens[currentTopic])
       ) {
         // Log only the first time we use the cached token
         if (!tokenRequestsMade.current[currentTopic]) {
           console.log(`Using cached token for ${currentTopic}`);
           tokenRequestsMade.current[currentTopic] = true;
         }
-        return user.topicsTokens[currentTopic].token;
+        return user.topicsTokens[currentTopic];
       }
 
       // Skip if we're already fetching this token
@@ -65,15 +73,15 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
 
       try {
         console.log(`Fetching token for topic: ${currentTopic}`);
-        const token = await getTopicsToken(currentTopic);
+        const tokenResponse = await getTopicsToken(currentTopic);
         tokenRequestsMade.current[currentTopic] = true;
 
-        if (!token) {
+        if (!tokenResponse) {
           throw new Error("Failed to get a valid token");
         }
 
         console.log(`Successfully fetched token for topic: ${currentTopic}`);
-        return token;
+        return tokenResponse;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to get topics token";

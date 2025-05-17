@@ -7,6 +7,7 @@ import {
   SignUpCredentials,
   ConfirmSignUpRequest,
   ResetPasswordRequest,
+  TopicsTokenResponse,
 } from "../lib/auth-service";
 
 interface User {
@@ -14,11 +15,7 @@ interface User {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
-  topicsTokens: Record<string, { 
-    token: string; 
-    expiresAt: number;
-    cacheName: string;
-  }>;
+  topicsTokens: Record<string, TopicsTokenResponse>;
   username?: string;
   sub?: string;
 }
@@ -34,7 +31,7 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (request: ResetPasswordRequest) => Promise<void>;
   signOut: () => void;
-  getTopicsToken: (topic: string) => Promise<string>;
+  getTopicsToken: (topic: string) => Promise<TopicsTokenResponse>;
   clearError: () => void;
 }
 
@@ -154,8 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               topic,
               response.idToken
             );
-            const topicsExpiresAt =
-              Date.now() + topicsResponse.expiration * 1000;
 
             // Update the user object with the new token
             setUser((prevUser) => {
@@ -164,11 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...prevUser,
                 topicsTokens: {
                   ...prevUser.topicsTokens,
-                  [topic]: {
-                    token: topicsResponse.token,
-                    expiresAt: topicsExpiresAt,
-                    cacheName: topicsResponse.cacheName,
-                  },
+                  [topic]: topicsResponse,
                 },
               };
             });
@@ -179,11 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const parsedUser = JSON.parse(storedUser) as User;
               parsedUser.topicsTokens = {
                 ...parsedUser.topicsTokens,
-                [topic]: {
-                  token: topicsResponse.token,
-                  expiresAt: topicsExpiresAt,
-                  cacheName: topicsResponse.cacheName,
-                },
+                [topic]: topicsResponse,
               };
               localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));
             }
@@ -287,35 +274,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Cache used to store tokens during the current session to avoid duplicate API calls
-  const tokenCache = useRef<
-    Record<string, { token: string; expiresAt: number; cacheName: string }>
-  >({});
+  const tokenCache = useRef<Record<string, TopicsTokenResponse>>({});
 
   const getTopicsToken = async (
     topic: string,
     retryAttempt: number = 0
-  ): Promise<string> => {
+  ): Promise<TopicsTokenResponse> => {
     if (!user) {
       throw new Error("User not authenticated");
     }
 
+    // Helper function to check if a token is expired
+    const isTokenExpired = (token: TopicsTokenResponse) => {
+      const expiresAt = new Date(token.expiresAt).getTime();
+      return expiresAt <= Date.now();
+    };
+
     // First, check in-memory cache
     if (
       tokenCache.current[topic] &&
-      tokenCache.current[topic].expiresAt > Date.now()
+      !isTokenExpired(tokenCache.current[topic])
     ) {
-      return tokenCache.current[topic].token;
+      return tokenCache.current[topic];
     }
 
     // Then check if we already have a valid topics token in the user object
     if (
       user.topicsTokens &&
       user.topicsTokens[topic] &&
-      user.topicsTokens[topic].expiresAt > Date.now()
+      !isTokenExpired(user.topicsTokens[topic])
     ) {
       // Store in our session cache and return
       tokenCache.current[topic] = user.topicsTokens[topic];
-      return user.topicsTokens[topic].token;
+      return user.topicsTokens[topic];
     }
 
     // Check if we're already fetching this token
@@ -337,14 +328,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Fetch a new token if we don't have one or it's expired
       const response = await authService.getTopicsToken(topic, user.idToken);
-      const topicsExpiresAt = Date.now() + response.expiration * 1000;
 
       // Store in memory cache first
-      tokenCache.current[topic] = {
-        token: response.token,
-        expiresAt: topicsExpiresAt,
-        cacheName: response.cacheName,
-      };
+      tokenCache.current[topic] = response;
 
       // Update the user object with the new token
       setUser((prevUser) => {
@@ -354,11 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...prevUser,
           topicsTokens: {
             ...prevUser.topicsTokens,
-            [topic]: {
-              token: response.token,
-              expiresAt: topicsExpiresAt,
-              cacheName: response.cacheName,
-            },
+            [topic]: response,
           },
         };
       });
@@ -369,16 +351,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsedUser = JSON.parse(storedUser) as User;
         parsedUser.topicsTokens = {
           ...parsedUser.topicsTokens,
-          [topic]: {
-            token: response.token,
-            expiresAt: topicsExpiresAt,
-            cacheName: response.cacheName,
-          },
+          [topic]: response,
         };
         localStorage.setItem(TOKEN_KEY, JSON.stringify(parsedUser));
       }
 
-      return response.token;
+      return response;
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to get topics token";

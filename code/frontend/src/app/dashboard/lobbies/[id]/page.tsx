@@ -11,6 +11,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ProtectedRoute from "@/components/protected-route";
 import { GameEvent, GameEventType } from "@/lib/types/game-events";
+import { MomentoService } from "@/lib/momento-service";
+import { useTopicsToken } from "@/hooks/use-topics-token";
 
 export default function LobbyDetailsPage() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export default function LobbyDetailsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<
     "easy" | "medium" | "hard"
   >("medium");
+  const { getToken } = useTopicsToken();
 
   // Function to fetch lobby details
   const fetchLobbyDetails = useCallback(async () => {
@@ -54,17 +57,6 @@ export default function LobbyDetailsPage() {
       setIsLoading(false);
     }
   }, [user, id]);
-
-  // Fetch lobby details on mount and when the ID changes
-  useEffect(() => {
-    if (!id) return;
-    fetchLobbyDetails();
-
-    // Set up an interval to poll for lobby updates
-    const intervalId = setInterval(fetchLobbyDetails, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [id, fetchLobbyDetails]);
 
   // Add event handling function
   const handleGameEvent = useCallback((event: GameEvent) => {
@@ -101,27 +93,66 @@ export default function LobbyDetailsPage() {
   useEffect(() => {
     if (!user?.idToken || !id) return;
 
-    // TODO: Initialize Momento Topics client and subscribe to events
-    const subscribeToEvents = async () => {
+    const momentoService = MomentoService.getInstance();
+    let isSubscribed = true;
+
+    const setupSubscription = async () => {
       try {
-        // Example pseudo-code:
-        // const topicClient = await momentoTopicClient.initialize(user.idToken);
-        // const topicName = `lobby-${id}`;
-        // await topicClient.subscribe(topicName, handleGameEvent);
+        // Get the token for the lobby topic
+        const tokenResponse = await getToken("lobby");
+        if (!tokenResponse) {
+          throw new Error("Failed to get token for lobby");
+        }
+
+        // Initialize Momento service with the token and cache name
+        await momentoService.initialize({
+          token: tokenResponse.token,
+          endpoint: tokenResponse.endpoint,
+          cacheName: tokenResponse.cacheName
+        });
+        
+        // Subscribe to the lobby events
+        await momentoService.subscribeToLobby(
+          id as string,
+          (event) => {
+            if (isSubscribed) {
+              handleGameEvent(event);
+            }
+          },
+          (error) => {
+            if (isSubscribed) {
+              console.error('Subscription error:', error);
+              setError('Failed to connect to game events. Please refresh the page.');
+            }
+          }
+        );
       } catch (err) {
         console.error('Failed to subscribe to game events:', err);
-        setError('Failed to connect to game events. Please refresh the page.');
+        if (isSubscribed) {
+          setError('Failed to connect to game events. Please refresh the page.');
+        }
       }
     };
 
-    subscribeToEvents();
+    setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
-      // TODO: Unsubscribe from events
-      // topicClient.unsubscribe(topicName);
+      isSubscribed = false;
+      momentoService.unsubscribeFromLobby(id as string).catch(console.error);
     };
-  }, [user, id, handleGameEvent]);
+  }, [user, id, handleGameEvent, getToken]);
+
+  // Fetch lobby details on mount and when the ID changes
+  useEffect(() => {
+    if (!id) return;
+    fetchLobbyDetails();
+
+    // Set up an interval to poll for lobby updates
+    const intervalId = setInterval(fetchLobbyDetails, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [id, fetchLobbyDetails]);
 
   // Handle starting the game
   const handleStartGame = async () => {
@@ -173,18 +204,6 @@ export default function LobbyDetailsPage() {
   // Check if the current user is the owner of the lobby
   const isOwner = lobby?.hostId === user?.sub;
   
-  // Add debug logging
-  useEffect(() => {
-    if (lobby && user) {
-      console.log('Lobby owner check:', {
-        hostId: lobby.hostId,
-        userId: user.sub,
-        username: user.username,
-        isOwner: lobby.hostId === user.sub
-      });
-    }
-  }, [lobby, user]);
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 pb-10">
