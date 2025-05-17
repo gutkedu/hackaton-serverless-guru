@@ -62,7 +62,7 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
       setIsLoading(true);
       setError(null);
       pendingFetches.current[currentTopic] = true;
-      
+
       try {
         console.log(`Fetching token for topic: ${currentTopic}`);
         const token = await getTopicsToken(currentTopic);

@@ -269,7 +269,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Cache used to store tokens during the current session to avoid duplicate API calls
-  const tokenCache = useRef<Record<string, {token: string, expiresAt: number}>>({});
+  const tokenCache = useRef<
+    Record<string, { token: string; expiresAt: number }>
+  >({});
 
   const getTopicsToken = async (
     topic: string,
@@ -322,7 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Store in memory cache first
       tokenCache.current[topic] = {
         token: response.token,
-        expiresAt: topicsExpiresAt
+        expiresAt: topicsExpiresAt,
       };
 
       // Update the user object with the new token
@@ -391,7 +393,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           // Clear token cache for this topic
           delete tokenCache.current[topic];
-          
+
           // Retry the topics token fetch with the new ID token
           // Small delay to ensure state update has completed
           await new Promise((resolve) => setTimeout(resolve, 100));

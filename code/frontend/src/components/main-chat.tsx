@@ -73,13 +73,17 @@ export default function MainChat() {
       }
 
       // Don't reinitialize with the same token we already have
-      if (token === lastTokenUsed.current && topicClientRef.current && isConnected) {
+      if (
+        token === lastTokenUsed.current &&
+        topicClientRef.current &&
+        isConnected
+      ) {
         console.log("Already initialized with this token, skipping");
         return;
       }
-      
+
       lastTokenUsed.current = token;
-      
+
       // Create a new topic client
       const client = new TopicClient({
         configuration: TopicConfigurations.Browser.latest(),
