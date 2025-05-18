@@ -25,7 +25,3 @@ Outputs:
   ApiGatewayURL:
     Description: URL for the API Gateway
     Value: !GetAtt BackendStackApplication.Outputs.ApiGatewayURL
-    
-  ContainerProxyURL:
-    Description: URL for the Container Proxy API
-    Value: !GetAtt ContainerStackApplication.Outputs.ContainerProxyURL
