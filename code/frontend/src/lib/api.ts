@@ -73,7 +73,7 @@ export async function api<T = any>(
 
     // Handle 204 No Content specifically
     if (response.status === 204) {
-      return undefined as T; // Or null as T, or handle as Promise<void> if T is void
+      return { message: 'Success' } as T;
     }
 
     const data = await response.json();
