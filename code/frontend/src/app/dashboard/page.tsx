@@ -192,24 +192,41 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold">Your Stats</h2>
               </div>
               <div className="px-6 py-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Games Played</div>
-                    <div className="text-2xl font-bold mt-1">0</div>
+                {isLoading ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className="animate-pulse space-y-2">
+                          <div className={`h-4 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded w-1/2`}></div>
+                          <div className={`h-6 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'} rounded w-3/4`}></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Wins</div>
-                    <div className="text-2xl font-bold mt-1">0</div>
+                ) : currentUserInfo ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Games Played</div>
+                      <div className="text-2xl font-bold mt-1">{currentUserInfo.stats.gamesPlayed}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Wins</div>
+                      <div className="text-2xl font-bold mt-1">{currentUserInfo.stats.wins}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Best WPM</div>
+                      <div className="text-2xl font-bold mt-1">{currentUserInfo.stats.bestWpm}</div>
+                    </div>
+                    <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Win Rate</div>
+                      <div className="text-2xl font-bold mt-1">{currentUserInfo.stats.winRate}%</div>
+                    </div>
                   </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Avg. WPM</div>
-                    <div className="text-2xl font-bold mt-1">0</div>
+                ) : (
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Unable to load statistics
                   </div>
-                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Best WPM</div>
-                    <div className="text-2xl font-bold mt-1">0</div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

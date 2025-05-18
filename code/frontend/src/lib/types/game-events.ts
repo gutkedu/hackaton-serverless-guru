@@ -4,7 +4,8 @@ export enum GameEventType {
   GAME_STARTED = 'GAME_STARTED',
   GAME_ENDED = 'GAME_ENDED',
   PLAYER_ACTION = 'PLAYER_ACTION',
-  GAME_STATE_UPDATED = 'GAME_STATE_UPDATED'
+  GAME_STATE_UPDATED = 'GAME_STATE_UPDATED',
+  PLAYER_PROGRESS = 'PLAYER_PROGRESS'
 }
 
 export interface BaseGameEvent {
@@ -14,8 +15,15 @@ export interface BaseGameEvent {
   gameId: string;
 }
 
+export interface Player {
+  username: string;
+  wpm: number;
+  progress: number;
+}
+
 export interface GameStartedEvent extends BaseGameEvent {
   type: GameEventType.GAME_STARTED;
+  text: string;
   content: string;
 }
 
@@ -31,10 +39,11 @@ export interface PlayerLeftEvent extends BaseGameEvent {
 
 export interface GameEndedEvent extends BaseGameEvent {
   type: GameEventType.GAME_ENDED;
-  winner?: {
+  players: Array<{
     username: string;
-  };
-  reason?: string;
+    wpm: number;
+    progress: number;
+  }>;
 }
 
 export interface PlayerActionEvent extends BaseGameEvent {
@@ -49,19 +58,23 @@ export interface PlayerActionEvent extends BaseGameEvent {
 export interface GameStateUpdatedEvent extends BaseGameEvent {
   type: GameEventType.GAME_STATE_UPDATED;
   state: {
-    players: Array<{
-      username: string;
-      wpm: number;
-      progress: number;
-    }>;
+    players: Player[];
     gameStatus: 'in_progress' | 'finished';
   };
 }
 
-export type GameEvent =
-  | GameStartedEvent
-  | PlayerJoinedEvent
-  | PlayerLeftEvent
-  | GameEndedEvent
-  | PlayerActionEvent
-  | GameStateUpdatedEvent; 
+export interface PlayerProgressEvent extends BaseGameEvent {
+  type: GameEventType.PLAYER_PROGRESS;
+  username: string;
+  progress: number;
+  wpm: number;
+}
+
+export type GameEvent = 
+  | GameStartedEvent 
+  | GameEndedEvent 
+  | PlayerJoinedEvent 
+  | PlayerLeftEvent 
+  | PlayerActionEvent 
+  | GameStateUpdatedEvent 
+  | PlayerProgressEvent; 

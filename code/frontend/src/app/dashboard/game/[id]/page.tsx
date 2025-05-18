@@ -4,11 +4,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { MomentoService } from "@/lib/momento-service";
-import { GameEvent, GameEventType, GameStateUpdatedEvent } from "@/lib/types/game-events";
+import { GameEvent, GameEventType, GameStateUpdatedEvent, GameEndedEvent } from "@/lib/types/game-events";
 import ProtectedRoute from "@/components/protected-route";
 import { useTopicsToken } from "@/hooks/use-topics-token";
 import { lobbyService } from "@/lib/lobby-service";
 import { useTheme } from "@/app/layout";
+import { gameService } from "@/lib/game-service";
 
 interface GameState {
   content: string;
@@ -147,16 +148,69 @@ export default function GamePage() {
   const handleGameEvent = useCallback((event: GameEvent) => {
     // Critical: Filter events for the current gameId!
     if (event.gameId !== gameId) {
-      // console.log('GamePage: Ignoring event for different gameId:', event.gameId, 'Current gameId:', gameId);
       return;
     }
     // Also ensure lobbyId matches if events carry it explicitly and it's relevant for filtering
     if (event.lobbyId && event.lobbyId !== lobbyIdRef.current && event.lobbyId !== lobbyId) {
-      // console.log('GamePage: Ignoring event for different lobbyId:', event.lobbyId, 'Current lobbyId:', lobbyIdRef.current || lobbyId);
       return;
     }
 
     console.log('GamePage: Received game event for current game:', event);
+
+    const handleGameEnd = async (finalPlayersFromEvent?: GameEndedEvent['players']) => {
+      console.log('Starting game end process', {
+        lobbyId: lobbyIdRef.current,
+        // Log which player list is being considered
+        playersSource: finalPlayersFromEvent ? 'event' : 'gameState',
+        eventPlayers: finalPlayersFromEvent,
+        gameStatePlayers: gameState.players,
+        userIdToken: !!user?.idToken
+      });
+
+      setGameState(prev => ({
+        ...prev,
+        gameStatus: 'finished',
+        countdown: null
+      }));
+
+      // Call the game/end route with the final game state
+      if (user?.idToken) {
+        try {
+          const currentLobbyId = lobbyIdRef.current;
+          const currentPlayers = finalPlayersFromEvent || gameState.players;
+
+          if (!currentLobbyId || typeof currentLobbyId !== 'string' || currentLobbyId.trim() === '') {
+            console.error('GamePage: Invalid or missing lobbyId for endGame:', currentLobbyId);
+            setError('Failed to end game: Invalid lobby ID.');
+            return;
+          }
+
+          if (!Array.isArray(currentPlayers)) {
+            console.error('GamePage: Invalid players data for endGame (from event or gameState):', currentPlayers);
+            setError('Failed to end game: Players data is not an array.');
+            return;
+          }
+
+          const payload = {
+            lobbyId: currentLobbyId,
+            players: currentPlayers.map(player => ({
+              username: player.username,
+              wpm: player.wpm,
+              progress: player.progress
+            }))
+          };
+          console.log('Sending game end request with payload:', payload);
+          
+          await gameService.endGame(payload, user.idToken);
+          console.log('Successfully sent game end data to API');
+        } catch (error) {
+          console.error('Failed to send game end data:', error);
+          setError('Failed to send game end data');
+        }
+      }
+
+      console.log("Game ended. Staying on GamePage for now.");
+    };
 
     switch (event.type) {
       case GameEventType.GAME_STARTED:
@@ -227,21 +281,16 @@ export default function GamePage() {
         });
         break;
       case GameEventType.GAME_ENDED:
-        setGameState(prev => ({
-          ...prev,
-          gameStatus: 'finished',
-          countdown: null
-        }));
-        // Add a small delay before redirecting to ensure the user sees they finished
-        // setTimeout(() => {
-        //   router.push(`/dashboard/lobbies`);
-        // }, 2000); // Removed redirection
-        console.log("Game ended. Staying on GamePage for now.");
+        const endedEvent = event as GameEndedEvent;
+        handleGameEnd(endedEvent.players).catch(error => {
+          console.error('Error handling game end:', error);
+          setError('Failed to handle game end');
+        });
         break;
     }
-  }, [router, gameId]);
+  }, [router, gameId, user, gameState.players]);
 
-  // Subscribe to game events (now for the lobby topic)
+  // Subscribe to game events (both lobby and game topics)
   useEffect(() => {
     if (!user?.idToken || !lobbyId || !gameId) { 
       console.error('GamePage: Missing required parameters for subscription:', { lobbyId, gameId, userIdToken: !!user?.idToken });
@@ -256,34 +305,52 @@ export default function GamePage() {
       try {
         const tokenResponse = await getToken("lobby");
         if (!tokenResponse) {
-          throw new Error("GamePage: Failed to get token for lobby events");
+          throw new Error("GamePage: Failed to get token for game events");
         }
 
         await momentoService.initialize({
           token: tokenResponse.token,
           endpoint: tokenResponse.endpoint,
           cacheName: tokenResponse.cacheName
-        });
+        }, user.idToken);
 
-        await momentoService.subscribeToLobby(
-          lobbyId,
-          (event) => {
-            if (isSubscribed) {
-              handleGameEvent(event);
+        // Subscribe to both lobby and game topics
+        await Promise.all([
+          momentoService.subscribeToLobby(
+            lobbyId,
+            (event) => {
+              if (isSubscribed) {
+                handleGameEvent(event);
+              }
+            },
+            (error) => {
+              if (isSubscribed) {
+                console.error('GamePage: Lobby subscription error:', error);
+                setError('Failed to connect to lobby events. Please refresh the page.');
+              }
             }
-          },
-          (error) => {
-            if (isSubscribed) {
-              console.error('GamePage: Lobby subscription error:', error);
-              setError('Failed to connect to lobby events. Please refresh the page.');
+          ),
+          momentoService.subscribeToGame(
+            gameId,
+            (event) => {
+              if (isSubscribed) {
+                handleGameEvent(event);
+              }
+            },
+            (error) => {
+              if (isSubscribed) {
+                console.error('GamePage: Game subscription error:', error);
+                setError('Failed to connect to game events. Please refresh the page.');
+              }
             }
-          }
-        );
-        console.log(`GamePage: Successfully set up subscription to lobby ${lobbyId} for game ${gameId}`);
+          )
+        ]);
+        
+        console.log(`GamePage: Successfully set up subscriptions for lobby ${lobbyId} and game ${gameId}`);
       } catch (err) {
-        console.error('GamePage: Failed to subscribe to lobby events:', err);
+        console.error('GamePage: Failed to subscribe to events:', err);
         if (isSubscribed) {
-          setError('Failed to connect to lobby events. Please refresh the page.');
+          setError('Failed to connect to game events. Please refresh the page.');
         }
       }
     };
@@ -294,6 +361,9 @@ export default function GamePage() {
       isSubscribed = false;
       if (lobbyId) {
         momentoService.unsubscribeFromLobby(lobbyId).catch(console.error);
+      }
+      if (gameId) {
+        momentoService.unsubscribeFromGame(gameId).catch(console.error);
       }
     };
   }, [user, lobbyId, gameId, getToken, handleGameEvent]);
@@ -371,11 +441,32 @@ export default function GamePage() {
 
       if (newWordIndex >= words.length) {
         setGameState(prev => ({...prev, gameStatus: 'finished'}));
+
+        // Ensure the current player's final stats are accurately reflected in the event
+        let finalPlayersList = gameState.players.map(p => {
+          if (p.username === user?.username) {
+            // User who finished: update their progress to 100 and use current WPM
+            return { ...p, progress: 100, wpm: wpm };
+          }
+          return p; // Other players remain as they are in current gameState
+        });
+
+        // If the current user was not in the gameState.players list for some reason (e.g. solo play, new player)
+        // ensure they are added.
+        if (user?.username && !finalPlayersList.some(p => p.username === user.username)) {
+          finalPlayersList.push({
+            username: user.username,
+            progress: 100,
+            wpm: wpm
+          });
+        }
+        
         const gameEndedEvent = {
           type: GameEventType.GAME_ENDED,
           gameId: gameId as string,
           lobbyId: lobbyIdRef.current,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          players: finalPlayersList // Use the accurately constructed list
         };
 
         momentoService.publish(`lobby-${lobbyIdRef.current}`, JSON.stringify(gameEndedEvent))

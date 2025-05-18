@@ -78,7 +78,17 @@ export async function POST(
       body: JSON.stringify(body),
     });
 
-    // Get the response data
+    // Handle 204 No Content response specifically
+    if (response.status === 204) {
+      console.log(`Proxy response for ${path}: Status 204 No Content`);
+      // For 204, there is no body. Return a simple NextResponse with the status.
+      // Also, ensure any relevant headers from the original response are forwarded if needed,
+      // though for a 204, there usually aren't many critical ones beyond what Next.js sets.
+      // We can create an empty response with just the status.
+      return new NextResponse(null, { status: 204 });
+    }
+
+    // For other statuses, attempt to parse JSON
     const data = await response.json().catch(() => ({
       error: `Failed to parse JSON response from API (status: ${response.status})`
     }));

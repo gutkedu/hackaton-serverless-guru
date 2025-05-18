@@ -1,5 +1,6 @@
 import { TopicClient, TopicItem, TopicConfigurations, CredentialProvider, TopicSubscribeResponse, TopicPublishResponse } from '@gomomento/sdk-web';
-import { GameEvent } from './types/game-events';
+import { GameEvent, GameEndedEvent, GameEventType } from './types/game-events';
+import { gameService } from './game-service';
 
 export interface MomentoConfig {
   token: string;
@@ -12,6 +13,7 @@ export class MomentoService {
   private topicClient: TopicClient | null = null;
   private subscriptions: Map<string, any> = new Map(); // Key is topicName
   private cacheName: string | null = null;
+  private idToken: string | null = null;
 
   private constructor() {}
 
@@ -22,13 +24,14 @@ export class MomentoService {
     return MomentoService.instance;
   }
 
-  async initialize(config: MomentoConfig) {
+  async initialize(config: MomentoConfig, idToken: string) {
     if (!this.topicClient) {
       this.topicClient = new TopicClient({
         configuration: TopicConfigurations.Browser.latest(),
         credentialProvider: CredentialProvider.fromString(config.token)
       });
       this.cacheName = config.cacheName;
+      this.idToken = idToken;
     }
   }
 
@@ -129,11 +132,15 @@ export class MomentoService {
         this.cacheName,
         topicName,
         {
-          onItem: (item: TopicItem) => {
+          onItem: async (item: TopicItem) => {
             try {
               const value = item.value();
               const valueString = typeof value === 'string' ? value : new TextDecoder().decode(value);
+              console.log('Received game event:', valueString); // Debug log
               const event = JSON.parse(valueString) as GameEvent;
+              console.log('Parsed game event:', event); // Debug log
+              
+              // Just pass the event to the handler, don't make API calls here
               onEvent(event);
             } catch (err) {
               console.error('Error parsing game event:', err);

@@ -8,11 +8,19 @@ export interface UserInfo {
   username: string;
   email: string;
   currentLobbyId?: string;
+  stats: {
+    gamesPlayed: number;
+    wins: number;
+    bestWpm: number;
+    winRate: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 class UserService {
   /**
-   * Get current user information including lobby status
+   * Get current user information including lobby status and game statistics
    */
   async getCurrentUser(idToken: string): Promise<UserInfo> {
     return api<UserInfo>("/game/me", {

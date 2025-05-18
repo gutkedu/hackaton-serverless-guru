@@ -52,15 +52,30 @@ export async function api<T = any>(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const errorBody = await response.text(); // Try to get text for better error logging
+      let errorDetails = {};
+      try {
+        errorDetails = JSON.parse(errorBody);
+      } catch (e) {
+        // If parsing fails, use the raw text if available, or an empty object
+        errorDetails = errorBody ? { rawError: errorBody } : {}; 
+      }
       
       // Special handling for lobby join 500 errors
       if (endpoint === '/game/lobbies/join' && response.status === 500) {
         // Return a partial success response
-        return { message: "Joined lobby with warnings", warning: error.message || "Server encountered an error" } as T;
+        return { 
+          message: "Joined lobby with warnings", 
+          warning: (errorDetails as any).message || (errorDetails as any).rawError || "Server encountered an error" 
+        } as T;
       }
       
-      throw new Error(error.message || `API Error: ${response.status}`);
+      throw new Error((errorDetails as any).message || (errorDetails as any).rawError || `API Error: ${response.status}`);
+    }
+
+    // Handle 204 No Content specifically
+    if (response.status === 204) {
+      return undefined as T; // Or null as T, or handle as Promise<void> if T is void
     }
 
     const data = await response.json();

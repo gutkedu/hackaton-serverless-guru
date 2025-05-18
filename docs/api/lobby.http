@@ -58,8 +58,7 @@ Content-Type: {{contentType}}
 Authorization: Bearer {{idToken}}
 
 {
-  "lobbyId": "2xCf80nIdnid0CGoG2gFR5ZCWnC"
-}
+  "lobbyId": "2xCf80nIdnid0CGoG2gFR5ZCWnC",
   "difficulty": "medium"
 }
 
@@ -84,3 +83,22 @@ Authorization: Bearer {{idToken}}
 ### Select user state
 GET {{url}}/game/me
 Authorization: Bearer {{idToken}}
+
+
+### End Game
+POST {{url}}/game/end
+Content-Type: {{contentType}}
+Authorization: Bearer {{idToken}}
+
+{
+  "lobbyId": "2xGkpzozGwqZJSNWtyfBAe57vxs",
+  "players": [
+    {
+      "username": "vaboxe9310",
+      "wpm": 100,
+      "progress": 0.5
+    }
+  ]
+}
+
+

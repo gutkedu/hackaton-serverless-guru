@@ -771,6 +771,54 @@ Resources:
           - '@middy/secrets-manager'
           - '@middy/core'
           - '@gomomento/sdk'
+          
+  EndGameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: EndGameFunction
+      Description: Handles game end logic, updates player stats and emits event
+      Handler: end-game.endGameHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/end
+            Method: POST
+            Auth:
+              Authorizer: TokenAuthorizer
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - events:PutEvents
+              Resource: !ImportValue "StatefulStack-EventBusArn"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/end-game.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+          - '@aws-sdk/client-eventbridge'
 
   ##########################################################################
   #                              API Gateway                               #

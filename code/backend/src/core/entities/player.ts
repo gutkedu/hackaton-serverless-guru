@@ -7,6 +7,9 @@ export interface PlayerProps {
   email: string
   userConfirmed?: boolean
   currentLobbyId?: string
+  gamesPlayed?: number
+  wins?: number
+  bestWpm?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -62,9 +65,40 @@ export class PlayerEntity extends Item<PlayerProps> {
     return this.props.currentLobbyId
   }
 
+  get gamesPlayed(): number {
+    return this.props.gamesPlayed ?? 0
+  }
+
+  get wins(): number {
+    return this.props.wins ?? 0
+  }
+
+  get bestWpm(): number | undefined {
+    return this.props.bestWpm
+  }
+
   setCurrentLobby(lobbyId: string | undefined) {
     this.props.currentLobbyId = lobbyId
     this.touch()
+  }
+
+  incrementGamesPlayed(): void {
+    this.props.gamesPlayed = (this.props.gamesPlayed ?? 0) + 1
+    this.touch()
+  }
+
+  incrementWins(): void {
+    this.props.wins = (this.props.wins ?? 0) + 1
+    this.touch()
+  }
+
+  updateBestWpm(wpm: number): boolean {
+    if (!this.props.bestWpm || wpm > this.props.bestWpm) {
+      this.props.bestWpm = wpm
+      this.touch()
+      return true
+    }
+    return false
   }
 
   touch() {
@@ -99,7 +133,12 @@ export class PlayerEntity extends Item<PlayerProps> {
     return {
       id: this.id,
       username: this.username,
-      currentLobbyId: this.currentLobbyId
+      currentLobbyId: this.currentLobbyId,
+      gamesPlayed: this.gamesPlayed,
+      wins: this.wins,
+      bestWpm: this.bestWpm,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt
     }
   }
 
@@ -111,6 +150,8 @@ export class PlayerEntity extends Item<PlayerProps> {
     return new PlayerEntity({
       ...props,
       userConfirmed: props.userConfirmed ?? false,
+      gamesPlayed: props.gamesPlayed ?? 0,
+      wins: props.wins ?? 0,
       id: props.id ?? KSUID.randomSync().string,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
