@@ -687,9 +687,6 @@ export default function GamePage() {
                       </>
                     )}
                   </div>
-                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>
-                    Players in lobby: {gameState.players.length}
-                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 space-y-4">
