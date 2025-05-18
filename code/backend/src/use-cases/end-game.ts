@@ -27,8 +27,6 @@ export class EndGameUseCase {
   ) {}
 
   async execute(input: EndGameInput): Promise<void> {
-    logger.info('EndGameUseCase - Starting to process game end', { lobbyId: input.lobbyId })
-
     const lobby = await this.lobbyRepository.getById(input.lobbyId)
     if (!lobby) {
       logger.warn('EndGameUseCase - Lobby not found', { lobbyId: input.lobbyId })
@@ -54,7 +52,15 @@ export class EndGameUseCase {
           playerEntity.incrementWins()
         }
         await this.playerRepository.update(playerEntity)
+        logger.info('EndGameUseCase - Updated player stats', {
+          username: player.username,
+          gamesPlayed: playerEntity.gamesPlayed,
+          wins: playerEntity.wins,
+          bestWpm: playerEntity.bestWpm,
+          progress: player.progress
+        })
       }
+      logger.warn('EndGameUseCase - Player not found', { username: player.username })
     }
 
     lobby.setStatus(LobbyStatus.OPEN)
