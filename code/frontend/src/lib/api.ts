@@ -3,8 +3,8 @@
  */
 
 // Use the proxy in development to avoid CORS issues
-// Use ENV variable in production, fallback to proxy in development to avoid CORS
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/proxy";
+// Always use the proxy route to avoid CORS issues
+const BASE_URL = "/api/proxy";
 
 console.log(`API client using base URL: ${BASE_URL}`);
 

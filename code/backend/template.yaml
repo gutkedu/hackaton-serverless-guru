@@ -25,11 +25,11 @@ Globals:
       - arm64
     Environment:
       Variables:
-        NODE_OPTIONS: --enable-source-maps
+        NODE_OPTIONS: '--enable-source-maps'
         USER_POOL_ID: !Ref UserPoolId
         USER_POOL_CLIENT_ID: !Ref UserPoolClientId
         TABLE_NAME: !Ref TableName
-        EVENT_BUS_NAME: !ImportValue "StatefulStack-EventBusName"
+        EVENT_BUS_NAME: !ImportValue StatefulStack-EventBusName
 
 Resources:
   ##########################################################################
@@ -95,7 +95,7 @@ Resources:
             Path: /auth/refresh-token
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -119,7 +119,7 @@ Resources:
           - '@aws-sdk/client-cognito-identity-provider'
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
-          
+
   SignUpPlayerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -137,7 +137,7 @@ Resources:
             Path: /auth/signup
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -165,8 +165,8 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/signup-player.ts
         External:
-          - 'ksuid'
-          - 'zod'
+          - ksuid
+          - zod
           - '@aws-lambda-powertools/parser'
           - '@aws-lambda-powertools/logger'
           - '@middy/secrets-manager'
@@ -192,7 +192,7 @@ Resources:
             Path: /auth/signin
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -234,7 +234,7 @@ Resources:
             Path: /auth/confirm-signup
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -255,8 +255,8 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/confirm-signup.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
           - '@aws-lambda-powertools/parser'
@@ -281,7 +281,7 @@ Resources:
             Path: /auth/forgot-password
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -322,7 +322,7 @@ Resources:
             Path: /auth/reset-password
             Method: POST
       Policies:
-        - AWSLambdaExecute 
+        - AWSLambdaExecute
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -341,7 +341,7 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/reset-password.ts
         External:
-          - 'zod'
+          - zod
           - '@aws-lambda-powertools/logger'
           - '@aws-sdk/client-cognito-identity-provider'
           - '@aws-lambda-powertools/parser'
@@ -385,7 +385,7 @@ Resources:
         EntryPoints:
           - src/lambdas/auth/get-topics-token.ts
         External:
-          - 'zod'
+          - zod
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@middy/secrets-manager'
@@ -428,8 +428,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/create-lobby.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -469,8 +469,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/list-lobbies.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -510,8 +510,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/get-lobby-details.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@aws-lambda-powertools/parser'
           - '@middy/core'
@@ -552,8 +552,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/join-lobby.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -593,8 +593,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/leave-lobby.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -634,8 +634,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/return-to-lobby.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -670,7 +670,7 @@ Resources:
                 - secretsmanager:GetSecretValue
               Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:MOMENTO_API_KEYS*
         - EventBridgePutEventsPolicy:
-            EventBusName: !ImportValue "StatefulStack-EventBusName"
+            EventBusName: !ImportValue StatefulStack-EventBusName
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -683,8 +683,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/start-game.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@middy/secrets-manager'
@@ -697,7 +697,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: CurrentUserInfoFunction
-      Description: Returns current user information including login status and lobby membership
+      Description: Returns current user information including login status and lobby
+        membership
       Handler: game/current-user-info.currentUserInfoHandler
       Layers:
         - !Ref NodejsDepsLayer
@@ -727,18 +728,19 @@ Resources:
         EntryPoints:
           - src/lambdas/game/current-user-info.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
           - '@aws-sdk/client-dynamodb'
-          
+
   GetGameStatisticsFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: GetGameStatisticsFunction
-      Description: Returns global game statistics including total games played and top players
+      Description: Returns global game statistics including total games played and top
+        players
       Handler: game/get-game-statistics.getGameStatisticsHandler
       Layers:
         - !Ref NodejsDepsLayer
@@ -766,7 +768,7 @@ Resources:
         EntryPoints:
           - src/lambdas/game/get-game-statistics.ts
         External:
-          - 'zod'
+          - zod
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -804,12 +806,12 @@ Resources:
         EntryPoints:
           - src/lambdas/infra/create-momento-caches.ts
         External:
-          - 'zod'
+          - zod
           - '@aws-lambda-powertools/logger'
           - '@middy/secrets-manager'
           - '@middy/core'
           - '@gomomento/sdk'
-          
+
   EndGameFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -837,7 +839,7 @@ Resources:
             - Effect: Allow
               Action:
                 - events:PutEvents
-              Resource: !ImportValue "StatefulStack-EventBusArn"
+              Resource: !ImportValue StatefulStack-EventBusArn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -850,8 +852,8 @@ Resources:
         EntryPoints:
           - src/lambdas/game/end-game.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -874,7 +876,7 @@ Resources:
         GameStartedEvent:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !ImportValue "StatefulStack-EventBusName"
+            EventBusName: !ImportValue StatefulStack-EventBusName
             Pattern:
               source:
                 - com.gameserviceapp
@@ -896,7 +898,7 @@ Resources:
         EntryPoints:
           - src/lambdas/events/process-game-started.ts
         External:
-          - 'zod'
+          - zod
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -916,7 +918,7 @@ Resources:
         GameEndedEvent:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !ImportValue "StatefulStack-EventBusName"
+            EventBusName: !ImportValue StatefulStack-EventBusName
             Pattern:
               source:
                 - com.gameserviceapp
@@ -938,8 +940,8 @@ Resources:
         EntryPoints:
           - src/lambdas/events/process-game-ended.ts
         External:
-          - 'zod'
-          - 'ksuid'
+          - zod
+          - ksuid
           - '@aws-lambda-powertools/logger'
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
@@ -962,9 +964,9 @@ Resources:
               Header: Authorization
               ReauthorizeEvery: 1800
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+        AllowMethods: '''GET,POST,OPTIONS'''
+        AllowHeaders: '''Content-Type,Authorization'''
+        AllowOrigin: '''*'''
 
 Outputs:
   ApiGatewayURL:

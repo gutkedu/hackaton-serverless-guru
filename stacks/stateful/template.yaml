@@ -7,7 +7,7 @@ Parameters:
     Type: String
     NoEcho: true
     Description: API Key for Momento Cache
-    
+
 Resources:
   ##########################################################################
   #                              DynamoDB                                  #
@@ -17,7 +17,7 @@ Resources:
     Properties:
       Location: ./dynamo.yaml
       Parameters:
-        TableName: "DynamoDBTable"
+        TableName: DynamoDBTable
 
   ##########################################################################
   #                              Cognito                                   #
@@ -27,8 +27,8 @@ Resources:
     Properties:
       Location: ./cognito.yaml
       Parameters:
-        AppName: "ApplicationName"
-        AppEventBusName: "AppEventBusName"
+        AppName: ApplicationName
+        AppEventBusName: AppEventBusName
 
   ##########################################################################
   #                           Event Bridge                                 #
@@ -36,7 +36,7 @@ Resources:
   EventBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: "AppEventBusName"
+      Name: AppEventBusName
 
   ##########################################################################
   #                 EventBridge Rule for Logging All Events                #
@@ -44,28 +44,28 @@ Resources:
   AllEventsLogRule:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Sub "AllEventsToCloudWatch"
-      Description: "Captures all events and sends them to CloudWatch Logs"
+      Name: !Sub AllEventsToCloudWatch
+      Description: Captures all events and sends them to CloudWatch Logs
       EventBusName: !Ref EventBus
       EventPattern:
         account:
           - !Ref AWS::AccountId
       State: ENABLED
       Targets:
-        - Arn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/events/logs-event-bus:*"
+        - Arn: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/events/logs-event-bus:*
           Id: AllEventsLogGroup
 
   AllEventsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/events/logs-event-bus"
+      LogGroupName: !Sub /aws/events/logs-event-bus
       RetentionInDays: 30
 
   EventsLogGroupRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
@@ -74,16 +74,16 @@ Resources:
       Policies:
         - PolicyName: PutEventsToCloudWatchLogs
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource: 
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
                   - !GetAtt AllEventsLogGroup.Arn
-                  - !Sub "${AllEventsLogGroup.Arn}:*"
-      
+                  - !Sub ${AllEventsLogGroup.Arn}:*
+
   ##########################################################################
   #                          SecretsManager                                #
   ##########################################################################
@@ -99,52 +99,52 @@ Outputs:
     Description: Name of the DynamoDB table
     Value: !GetAtt DynamoDBApplication.Outputs.TableName
     Export:
-      Name: !Sub "StatefulStack-TableName"
+      Name: !Sub StatefulStack-TableName
 
   TableArn:
     Description: ARN of the DynamoDB table
     Value: !GetAtt DynamoDBApplication.Outputs.TableArn
     Export:
-      Name: !Sub "StatefulStack-TableArn"
+      Name: !Sub StatefulStack-TableArn
 
   UserPoolId:
     Description: ID of the Cognito User Pool
     Value: !GetAtt CognitoApplication.Outputs.UserPoolId
     Export:
-      Name: !Sub "StatefulStack-UserPoolId"
+      Name: !Sub StatefulStack-UserPoolId
 
   UserPoolArn:
     Description: ARN of the Cognito User Pool
     Value: !GetAtt CognitoApplication.Outputs.UserPoolArn
     Export:
-      Name: !Sub "StatefulStack-UserPoolArn"
+      Name: !Sub StatefulStack-UserPoolArn
 
   UserPoolClientId:
     Description: ID of the Cognito User Pool Client
     Value: !GetAtt CognitoApplication.Outputs.UserPoolClientId
     Export:
-      Name: !Sub "StatefulStack-UserPoolClientId"
+      Name: !Sub StatefulStack-UserPoolClientId
 
   IdentityPoolId:
     Description: ID of the Cognito Identity Pool
     Value: !GetAtt CognitoApplication.Outputs.IdentityPoolId
     Export:
-      Name: !Sub "StatefulStack-IdentityPoolId"
+      Name: !Sub StatefulStack-IdentityPoolId
 
   EventBusName:
     Description: Name of the Event Bus
     Value: !Ref EventBus
     Export:
-      Name: !Sub "StatefulStack-EventBusName"
+      Name: !Sub StatefulStack-EventBusName
 
   EventBusArn:
     Description: ARN of the Event Bus
     Value: !GetAtt EventBus.Arn
     Export:
-      Name: !Sub "StatefulStack-EventBusArn"
+      Name: !Sub StatefulStack-EventBusArn
 
   MomentoApiKeySecretArn:
     Description: ARN of the Momento API Key Secret
     Value: !GetAtt SecretsManager.Outputs.MomentoApiKeySecretArn
     Export:
-      Name: !Sub "StatefulStack-MomentoApiKeySecretArn"
+      Name: !Sub StatefulStack-MomentoApiKeySecretArn
