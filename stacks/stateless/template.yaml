@@ -6,10 +6,6 @@ Parameters:
   AppName:
     Type: String
     Default: ServerlessHackaton
-    
-  ContainerImageUri:
-    Type: String
-    Description: URI for the container image in ECR
 
 Resources:   
   BackendStackApplication:
