@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:fast": "NEXT_TELEMETRY_DISABLED=1 next dev --turbopack --port 3000 --hostname 0.0.0.0",
     "build": "next build",
+    "build:fast": "NEXT_TELEMETRY_DISABLED=1 next build",
     "start": "next start",
-    "lint": "next lint"
+    "start:fast": "NEXT_TELEMETRY_DISABLED=1 next start --port 3000 --hostname 0.0.0.0",
+    "lint": "next lint",
+    "clean": "rm -rf .next out"
   },
   "dependencies": {
     "@gomomento/sdk-web": "^1.111.0",

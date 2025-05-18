@@ -55,24 +55,27 @@ export async function POST(
   const path = resolvedParams.path.join("/");
 
   try {
-    // Get the request body
     const body = await request.json().catch(() => ({}));
-
-    // Forward the request to the actual API server
     const apiUrl = `${API_BASE_URL}/${path}`;
 
-    // Get all headers from the original request
-    const headers: HeadersInit = {};
-    request.headers.forEach((value, key) => {
-      // Skip host header as it will be set automatically
-      if (key.toLowerCase() !== "host") {
-        headers[key] = value;
-      }
-    });
+    // Simplified header forwarding for diagnostics
+    const forwardedHeaders: HeadersInit = {
+      // Forward Content-Type from the original request, or default to application/json
+      'Content-Type': request.headers.get('Content-Type') || 'application/json',
+    };
+    // Specifically forward the Authorization header if it exists
+    const authorizationHeader = request.headers.get('Authorization');
+    if (authorizationHeader) {
+      forwardedHeaders['Authorization'] = authorizationHeader;
+    }
+    // Log the headers being forwarded to the backend API for this path
+    if (path === 'game/lobbies/return') {
+      console.log(`Proxying POST to ${apiUrl} with headers:`, JSON.stringify(forwardedHeaders));
+    }
 
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers,
+      headers: forwardedHeaders, // Use the explicitly constructed headers
       body: JSON.stringify(body),
     });
 

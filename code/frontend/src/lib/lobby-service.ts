@@ -188,6 +188,34 @@ class LobbyService {
       throw error;
     }
   }
+
+  /**
+   * Return to a previously joined lobby
+   */
+  async returnToLobby(
+    lobbyId: string,
+    idToken: string
+  ): Promise<{ success: boolean; lobby: LobbyDetails | Partial<Lobby> }> {
+    try {
+      if (!lobbyId) {
+        throw new Error("Lobby ID is required for returnToLobby");
+      }
+
+      const response = await api<{
+        success: boolean;
+        lobby: LobbyDetails | Partial<Lobby>;
+      }>("/game/lobbies/return", {
+        method: "POST",
+        body: { lobbyId },
+        token: `Bearer ${idToken}`,
+      });
+      console.log("Successfully returned to lobby:", response);
+      return response;
+    } catch (error) {
+      console.error(`Error returning to lobby ${lobbyId}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const lobbyService = new LobbyService();

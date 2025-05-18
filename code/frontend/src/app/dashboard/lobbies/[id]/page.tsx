@@ -64,8 +64,13 @@ export default function LobbyDetailsPage() {
 
     switch (event.type) {
       case GameEventType.GAME_STARTED:
-        // Redirect to game page or update UI
-        router.push(`/dashboard/game/${event.gameId}`);
+        if (event.content && event.gameId && event.lobbyId) {
+          // Redirect to game page with lobbyId and initialContent
+          router.push(`/dashboard/game/${event.gameId}?lobbyId=${event.lobbyId}&initialContent=${encodeURIComponent(event.content)}`);
+        } else {
+          console.error('GAME_STARTED event missing critical data:', event);
+          setError("Failed to start game: event data incomplete.");
+        }
         break;
       case GameEventType.PLAYER_JOINED:
         // Refresh lobby details to show new player
@@ -218,7 +223,7 @@ export default function LobbyDetailsPage() {
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
-                <button
+                {/* <button
                   onClick={fetchLobbyDetails}
                   disabled={isLoading}
                   className="text-blue-600 hover:text-blue-800 flex items-center"
@@ -238,13 +243,8 @@ export default function LobbyDetailsPage() {
                     />
                   </svg>
                   {isLoading ? "Refreshing..." : "Refresh"}
-                </button>
-                <Link
-                  href="/dashboard/lobbies"
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  Back to Lobbies
-                </Link>
+                </button> */}
+                {/* Link to Lobbies was previously removed here */}
               </div>
             </div>
           </div>
