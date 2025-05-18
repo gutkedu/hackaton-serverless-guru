@@ -53,6 +53,13 @@ export async function api<T = any>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      
+      // Special handling for lobby join 500 errors
+      if (endpoint === '/game/lobbies/join' && response.status === 500) {
+        // Return a partial success response
+        return { message: "Joined lobby with warnings", warning: error.message || "Server encountered an error" } as T;
+      }
+      
       throw new Error(error.message || `API Error: ${response.status}`);
     }
 

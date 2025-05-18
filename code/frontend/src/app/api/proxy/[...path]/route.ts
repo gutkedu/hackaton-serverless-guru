@@ -58,38 +58,47 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     const apiUrl = `${API_BASE_URL}/${path}`;
 
-    // Simplified header forwarding for diagnostics
-    const forwardedHeaders: HeadersInit = {
-      // Forward Content-Type from the original request, or default to application/json
-      'Content-Type': request.headers.get('Content-Type') || 'application/json',
-    };
-    // Specifically forward the Authorization header if it exists
-    const authorizationHeader = request.headers.get('Authorization');
-    if (authorizationHeader) {
-      forwardedHeaders['Authorization'] = authorizationHeader;
-    }
-    // Log the headers being forwarded to the backend API for this path
-    if (path === 'game/lobbies/return') {
-      console.log(`Proxying POST to ${apiUrl} with headers:`, JSON.stringify(forwardedHeaders));
-    }
+    // Forward all headers except host
+    const headers: HeadersInit = {};
+    request.headers.forEach((value, key) => {
+      if (key.toLowerCase() !== "host") {
+        headers[key] = value;
+      }
+    });
+
+    console.log(`Proxying POST request to ${apiUrl}`, {
+      headers,
+      body,
+      path
+    });
 
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: forwardedHeaders, // Use the explicitly constructed headers
+      headers,
       body: JSON.stringify(body),
     });
 
     // Get the response data
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({
+      error: `Failed to parse JSON response from API (status: ${response.status})`
+    }));
+
+    console.log(`Proxy response for ${path}:`, {
+      status: response.status,
+      data
+    });
 
     // Return the response with appropriate status and headers
     return NextResponse.json(data, {
       status: response.status,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   } catch (error) {
     console.error(`Proxy error for POST /${path}:`, error);
     return NextResponse.json(
-      { error: "Failed to send data to API" },
+      { error: "Failed to send data to API", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

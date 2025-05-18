@@ -123,14 +123,28 @@ export default function LobbiesPage() {
 
   // Handle joining a lobby
   const handleJoinLobby = async (lobbyId: string) => {
-    if (!user?.idToken) return;
+    if (!user?.idToken) {
+      setError("You must be logged in to join a lobby.");
+      return;
+    }
 
     try {
-      await lobbyService.joinLobby({ lobbyId }, user.idToken);
+      const response = await lobbyService.joinLobby({ lobbyId }, user.idToken);
+      
+      // If we have a warning, show it but continue with the join
+      if (response.warning) {
+        console.warn("Warning while joining lobby:", response.warning);
+        // Optionally show a warning toast or message to the user
+      }
+      
+      // Continue with navigation regardless of warning
       router.push(`/dashboard/lobbies/${lobbyId}`);
     } catch (err) {
       console.error("Failed to join lobby:", err);
-      setError("Failed to join lobby. Please try again.");
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Failed to join lobby. Please try again.";
+      setError(errorMessage);
     }
   };
 

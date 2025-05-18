@@ -46,11 +46,57 @@ export default function GamePage() {
   const initialContentFromQuery = searchParams.get('initialContent');
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isReturningToLobby, setIsReturningToLobby] = useState(false);
+  const wpmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number | null>(null);
 
   // WPM related state
   const [startTime, setStartTime] = useState<number | null>(null);
   const [correctCharsCount, setCorrectCharsCount] = useState(0);
   const [wpm, setWpm] = useState(0);
+
+  // Add cleanup for WPM interval
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (wpmIntervalRef.current) {
+        clearInterval(wpmIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Start WPM tracking when game starts
+  useEffect(() => {
+    if (gameState.gameStatus === 'in_progress' && startTime) {
+      // Clear any existing interval
+      if (wpmIntervalRef.current) {
+        clearInterval(wpmIntervalRef.current);
+      }
+
+      // Update WPM every second
+      wpmIntervalRef.current = setInterval(() => {
+        const currentTime = Date.now();
+        const elapsedTimeInMinutes = (currentTime - startTime) / 60000;
+        
+        // If there's been no activity in the last 2 seconds, adjust WPM calculation
+        if (lastActivityRef.current && (currentTime - lastActivityRef.current) > 2000) {
+          const inactiveTimeInMinutes = (currentTime - lastActivityRef.current) / 60000;
+          const adjustedWpm = Math.max(0, Math.round((correctCharsCount / 5) / (elapsedTimeInMinutes + inactiveTimeInMinutes)));
+          setWpm(adjustedWpm);
+        } else if (elapsedTimeInMinutes > 0) {
+          const calculatedWpm = Math.round((correctCharsCount / 5) / elapsedTimeInMinutes);
+          setWpm(calculatedWpm);
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (wpmIntervalRef.current) {
+        clearInterval(wpmIntervalRef.current);
+      }
+    };
+  }, [gameState.gameStatus, startTime, correctCharsCount]);
 
   // Effect to initialize game state from query params or if game data changes
   useEffect(() => {
@@ -151,15 +197,34 @@ export default function GamePage() {
         break;
       case GameEventType.GAME_STATE_UPDATED:
         const stateEvent = event as GameStateUpdatedEvent;
-        setGameState(prev => ({
-          ...prev,
-          players: stateEvent.state.players.map(player => ({
-            ...player,
-            progress: Math.min(player.progress, 100) // Ensure progress doesn't exceed 100%
-          })),
-          gameStatus: stateEvent.state.gameStatus === 'finished' ? 'finished' : prev.gameStatus,
-          countdown: prev.countdown // Preserve countdown state
-        }));
+        setGameState(prev => {
+          // Create a map of existing players for easy lookup
+          const existingPlayers = new Map(prev.players.map(p => [p.username, p]));
+          
+          // Update or add new players while preserving existing player data
+          stateEvent.state.players.forEach(player => {
+            if (existingPlayers.has(player.username)) {
+              const existing = existingPlayers.get(player.username)!;
+              existingPlayers.set(player.username, {
+                ...existing,
+                progress: Math.min(player.progress, 100), // Ensure progress doesn't exceed 100%
+                wpm: player.wpm
+              });
+            } else {
+              existingPlayers.set(player.username, {
+                ...player,
+                progress: Math.min(player.progress, 100)
+              });
+            }
+          });
+
+          return {
+            ...prev,
+            players: Array.from(existingPlayers.values()),
+            gameStatus: stateEvent.state.gameStatus === 'finished' ? 'finished' : prev.gameStatus,
+            countdown: prev.countdown // Preserve countdown state
+          };
+        });
         break;
       case GameEventType.GAME_ENDED:
         setGameState(prev => ({
@@ -236,60 +301,51 @@ export default function GamePage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (gameState.gameStatus !== 'in_progress' || !lobbyIdRef.current) return;
     
+    const currentTime = Date.now();
+    lastActivityRef.current = currentTime;
+    
     const words = gameState.content.split(' ');
-    // Ensure currentWordIndex is within bounds
     if (currentWordIndex >= words.length) {
-      // This case should ideally not be reached if game ends correctly
       console.warn("Attempting to process input after all words are typed.");
       return;
     }
     const currentWord = words[currentWordIndex];
     const value = e.target.value;
     
-    // Prevent typing spaces if the word itself doesn't end with a space (unless it's the exact word match)
-    // Or, more simply, disallow leading/multiple spaces within a word.
-    // For now, let's assume single words don't have spaces. If they do, this needs more thought.
-    // The main change is advancing without needing a final space.
-
     setUserInput(value);
-
-    // Check if the current input prefix matches the current word
     const isMatch = currentWord.startsWith(value);
     setIsCorrect(isMatch);
 
-    // If the typed value exactly matches the current word, move to the next word
     if (value === currentWord) {
       const newWordIndex = currentWordIndex + 1;
       setCurrentWordIndex(newWordIndex);
-      setUserInput(''); // Clear input for the next word
-      setIsCorrect(true); // Reset for the next word
+      setUserInput('');
+      setIsCorrect(true);
 
       // WPM Calculation
       let charsInWord = currentWord.length;
-      if (newWordIndex < words.length) { // Add 1 for the space if it's not the last word
+      if (newWordIndex < words.length) {
         charsInWord += 1;
       }
       const newCorrectChars = correctCharsCount + charsInWord;
       setCorrectCharsCount(newCorrectChars);
 
       if (startTime) {
-        const currentTime = Date.now();
         const elapsedTimeInMinutes = (currentTime - startTime) / 60000;
-        const calculatedWpm = elapsedTimeInMinutes > 0 ? Math.round((newCorrectChars / 5) / elapsedTimeInMinutes) : 0;
-        console.log(`WPM Update: prevWPM=${wpm}, newCalcWPM=${calculatedWpm}, newCorrectChars=${newCorrectChars}, elapsedMin=${elapsedTimeInMinutes.toFixed(4)}, startTime=${startTime}, currentTime=${currentTime}`);
-        if (elapsedTimeInMinutes > 0) {
+        const timeSinceLastInput = currentTime - (lastActivityRef.current || currentTime);
+        
+        if (timeSinceLastInput <= 2000 && elapsedTimeInMinutes > 0) {
+          const calculatedWpm = Math.round((newCorrectChars / 5) / elapsedTimeInMinutes);
           setWpm(calculatedWpm);
-        } else if (startTime) { 
-          console.warn('WPM calculation skipped: elapsedTimeInMinutes was not positive.', {elapsedTimeInMinutes, newCorrectChars, startTime, currentTime});
+        } else if (elapsedTimeInMinutes > 0) {
+          const adjustedTime = elapsedTimeInMinutes + (timeSinceLastInput / 60000);
+          const adjustedWpm = Math.max(0, Math.round((newCorrectChars / 5) / adjustedTime));
+          setWpm(adjustedWpm);
         }
-      } else {
-        console.warn('WPM calculation skipped: startTime is null.');
       }
 
-      // Calculate progress
       const progress = (newWordIndex / words.length) * 100;
       
-      // Send progress update event
       const progressEvent = {
         type: GameEventType.GAME_STATE_UPDATED,
         state: {
@@ -313,9 +369,8 @@ export default function GamePage() {
           setError('Failed to send progress update');
         });
 
-      // If game is finished (all words typed)
       if (newWordIndex >= words.length) {
-        setGameState(prev => ({...prev, gameStatus: 'finished'})); // Update local game status immediately
+        setGameState(prev => ({...prev, gameStatus: 'finished'}));
         const gameEndedEvent = {
           type: GameEventType.GAME_ENDED,
           gameId: gameId as string,
@@ -437,21 +492,24 @@ export default function GamePage() {
                               {index === 0 && <span className="text-yellow-500">👑</span>}
                             </div>
                           </div>
-                          <div className="relative">
+                          <div className="relative h-6 mb-4">
                             <div className={`overflow-hidden h-3 text-xs flex rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} transition-colors duration-300`}>
                               <div
                                 style={{ width: `${player.progress}%` }}
                                 className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
                                   player.username === user?.username
                                     ? isDarkMode ? 'bg-blue-500' : 'bg-blue-600'
-                                    : isDarkMode ? 'bg-gray-600' : 'bg-gray-500'
+                                    : isDarkMode ? 'bg-red-500' : 'bg-red-600'
                                 } transition-all duration-300 rounded-full`}
                               />
                             </div>
                             {/* Car/Player indicator */}
                             <div 
                               className="absolute top-1/2 transform -translate-y-1/2 transition-all duration-300 text-lg"
-                              style={{ left: `${player.progress}%` }}
+                              style={{ 
+                                left: `${player.progress}%`, 
+                                transform: `translate(-50%, -50%) scaleX(-1)` 
+                              }}
                             >
                               {player.username === user?.username ? '🏎️' : '🚗'}
                             </div>
@@ -627,4 +685,4 @@ export default function GamePage() {
       </div>
     </ProtectedRoute>
   );
-} 
+}

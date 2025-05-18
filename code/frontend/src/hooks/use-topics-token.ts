@@ -4,15 +4,6 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCallback, useRef, useState } from "react";
 import { TopicsTokenResponse } from "@/lib/auth-service";
 
-// Note: We're now relying solely on the auth context to manage tokens
-// and are not using localStorage directly in this hook
-
-/**
- * A hook for easily accessing topics tokens in components
- * Can either be used with manual fetching or with automatic prefetching
- * Tokens are now stored in localStorage for persistence
- */
-
 export function useTopicsToken(defaultTopic: string = "lobby") {
   const { user, getTopicsToken } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -20,13 +11,6 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
 
   // Track ongoing token fetch requests to prevent duplicates
   const pendingFetches = useRef<Record<string, boolean>>({});
-
-  // Note: We're removing the separate cachedTokens state since all tokens are now
-  // managed in the auth context and we were having sync issues between the two
-
-  // We no longer automatically fetch tokens on every idToken change
-  // Tokens will be fetched on demand through getToken
-  // Initial token fetch is handled in the auth context when user signs in
 
   /**
    * Get a topics token for the specified topic, with built-in error handling
@@ -36,7 +20,9 @@ export function useTopicsToken(defaultTopic: string = "lobby") {
   const tokenRequestsMade = useRef<Record<string, boolean>>({});
 
   const getToken = useCallback(
-    async (topic: string = defaultTopic): Promise<TopicsTokenResponse | null> => {
+    async (
+      topic: string = defaultTopic
+    ): Promise<TopicsTokenResponse | null> => {
       const currentTopic = topic || defaultTopic;
 
       // Helper function to check if a token is expired

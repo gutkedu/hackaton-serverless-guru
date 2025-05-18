@@ -24,9 +24,20 @@ const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<A
 
   const authorizer = extractAuthorizerContext(event.requestContext.authorizer)
 
+  if (!authorizer || !authorizer.username) {
+    return {
+      statusCode: 401,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ message: 'Unauthorized - User information not found' })
+    }
+  }
+
   await joinLobbyUseCase.execute({
     lobbyId,
-    username: authorizer?.username as string
+    username: authorizer.username
   })
 
   return {

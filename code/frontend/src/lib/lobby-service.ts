@@ -137,17 +137,24 @@ class LobbyService {
   async joinLobby(
     request: JoinLobbyRequest,
     idToken: string
-  ): Promise<{ message: string }> {
+  ): Promise<{ message: string; warning?: string }> {
     try {
       if (!request.lobbyId) {
         throw new Error("Lobby ID is required");
       }
 
-      return await api<{ message: string }>("/game/lobbies/join", {
+      const response = await api<{ message: string; warning?: string }>("/game/lobbies/join", {
         method: "POST",
         body: request,
         token: `Bearer ${idToken}`,
       });
+
+      // Log warning if present but don't throw error
+      if (response.warning) {
+        console.warn("Warning while joining lobby:", response.warning);
+      }
+
+      return response;
     } catch (error) {
       console.error(`Error joining lobby:`, error);
       throw error;

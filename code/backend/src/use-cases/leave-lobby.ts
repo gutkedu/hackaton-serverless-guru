@@ -15,13 +15,11 @@ export class LeaveLobbyUseCase {
   constructor(private lobbyRepository: LobbyRepository, private playerRepository: PlayerRepository) {}
 
   async execute({ username }: LeaveLobbyRequest): Promise<LeaveLobbyResponse> {
-    // Get the player
     const player = await this.playerRepository.getByUsername(username)
     if (!player) {
       throw new IntegrationError('Player not found')
     }
 
-    // Check if player is in a lobby
     if (!player.currentLobbyId) {
       return { success: true }
     }
@@ -30,25 +28,30 @@ export class LeaveLobbyUseCase {
 
     const lobby = await this.lobbyRepository.getById(lobbyId)
     if (!lobby) {
-      // Lobby doesn't exist but player thinks they're in it - fix the inconsistency
       player.setCurrentLobby(undefined)
       await this.playerRepository.update(player)
       return { success: true }
     }
 
-    // Remove player from lobby
     lobby.removePlayer(username)
 
-    // Update player first
     player.setCurrentLobby(undefined)
     await this.playerRepository.update(player)
 
-    // If player was the host or last player, delete the lobby
     if (lobby.hostId === player.id || lobby.playerCount === 0) {
-      await this.lobbyRepository.delete(lobbyId)
+      const lobby = await this.lobbyRepository.getById(lobbyId)
+      if (lobby) {
+        for (const player of lobby.playersUsernames || []) {
+          const playerEntity = await this.playerRepository.getByUsername(player)
+          if (playerEntity) {
+            playerEntity.setCurrentLobby(undefined)
+            await this.playerRepository.update(playerEntity)
+          }
+        }
+        await this.lobbyRepository.delete(lobbyId)
+      }
       return { success: true, lobbyDeleted: true }
     } else {
-      // Otherwise update the lobby
       await this.lobbyRepository.update(lobby)
       return { success: true, lobbyDeleted: false }
     }
