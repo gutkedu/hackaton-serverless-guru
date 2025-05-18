@@ -46,15 +46,15 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-surface-50 to-surface-100 p-4">
+      <div className="w-full max-w-md rounded-lg bg-surface-50 p-8 shadow-lg transition-colors duration-300">
+        <h1 className="mb-6 text-center text-2xl font-bold text-foreground">
           {success ? "Verify your email" : "Create an account"}
         </h1>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-4 rounded-md bg-red-50 dark:bg-red-900/10 p-4">
+            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -63,7 +63,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Email
               </label>
@@ -73,7 +73,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-surface-300 bg-surface-50 px-3 py-2 text-foreground placeholder-surface-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 transition-colors duration-300"
                 placeholder="your@email.com"
               />
             </div>
@@ -81,7 +81,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Username
               </label>
@@ -91,7 +91,7 @@ export default function SignupPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-surface-300 bg-surface-50 px-3 py-2 text-foreground placeholder-surface-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 transition-colors duration-300"
                 placeholder="username"
               />
             </div>
@@ -99,7 +99,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Password
               </label>
@@ -109,7 +109,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-surface-300 bg-surface-50 px-3 py-2 text-foreground placeholder-surface-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 transition-colors duration-300"
                 placeholder="••••••••"
               />
             </div>
@@ -118,7 +118,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                className="w-full rounded-md bg-primary-600 px-4 py-2 text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-300"
               >
                 {isSubmitting ? "Signing up..." : "Sign Up"}
               </button>
@@ -126,14 +126,14 @@ export default function SignupPage() {
           </form>
         ) : (
           <form onSubmit={handleConfirmSignup} className="space-y-4">
-            <p className="mb-4 text-sm text-gray-600">
+            <p className="mb-4 text-sm text-surface-600 dark:text-surface-400">
               We've sent a verification code to your email. Please enter it
               below to complete your registration.
             </p>
             <div>
               <label
                 htmlFor="verificationCode"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Verification Code
               </label>
@@ -143,7 +143,7 @@ export default function SignupPage() {
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-surface-300 bg-surface-50 px-3 py-2 text-foreground placeholder-surface-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 transition-colors duration-300"
                 placeholder="123456"
               />
             </div>
@@ -152,7 +152,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                className="w-full rounded-md bg-primary-600 px-4 py-2 text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-300"
               >
                 {isSubmitting ? "Verifying..." : "Verify Email"}
               </button>
@@ -160,9 +160,9 @@ export default function SignupPage() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-surface-600 dark:text-surface-400">
           Already have an account?{" "}
-          <Link href="/login" className="text-blue-600 hover:text-blue-500">
+          <Link href="/login" className="text-primary-600 hover:text-primary-500 transition-colors duration-300">
             Sign in
           </Link>
         </p>

@@ -18,7 +18,7 @@ export interface LobbyDetails extends Lobby {
   players: {
     id: string;
     username: string;
-    score?: number;
+    wpm?: number;
   }[];
 }
 
@@ -73,7 +73,7 @@ class LobbyService {
         players: {
           id: string;
           username: string;
-          score?: number;
+          wpm?: number;
         }[];
       }>(`/game/lobbies/${lobbyId}`, {
         method: "GET",

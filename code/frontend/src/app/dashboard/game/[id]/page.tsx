@@ -8,12 +8,13 @@ import { GameEvent, GameEventType, GameStateUpdatedEvent } from "@/lib/types/gam
 import ProtectedRoute from "@/components/protected-route";
 import { useTopicsToken } from "@/hooks/use-topics-token";
 import { lobbyService } from "@/lib/lobby-service";
+import { useTheme } from "@/app/layout";
 
 interface GameState {
   content: string;
   players: Array<{
     username: string;
-    score: number;
+    wpm: number;
     progress: number;
   }>;
   gameStatus: 'waiting' | 'in_progress' | 'finished';
@@ -25,6 +26,8 @@ export default function GamePage() {
   const router = useRouter();
   const { id: gameId } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark" || (theme === "system" && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [error, setError] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState>({
     content: '',
@@ -60,7 +63,7 @@ export default function GamePage() {
         content: initialContentFromQuery,
         gameStatus: 'waiting',
         countdown: 5,
-        players: prev.players.map(p => ({ ...p, progress: 0, score: 0 }))
+        players: prev.players.map(p => ({ ...p, progress: 0, wpm: 0 }))
       }));
 
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -120,7 +123,7 @@ export default function GamePage() {
             ...prev,
             content: event.content,
             countdown: 5,
-            players: prev.players.map(p => ({ ...p, progress: 0, score: 0 }))
+            players: prev.players.map(p => ({ ...p, progress: 0, wpm: 0 }))
           }));
           // Start countdown (copied from above, ensure this is not duplicated if called from initial setup too)
           if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
@@ -294,7 +297,7 @@ export default function GamePage() {
             {
               username: user?.username || 'Anonymous',
               progress,
-              score: 0 // Score can be calculated based on time/accuracy if needed
+              wpm
             }
           ],
           gameStatus: progress >= 100 ? 'finished' : 'in_progress'
@@ -362,51 +365,43 @@ export default function GamePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} py-8 transition-colors duration-300`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {error && (
-            <div className="rounded-md bg-red-50 p-4 mb-6">
+            <div className={`rounded-md ${isDarkMode ? 'bg-red-900/20' : 'bg-red-50'} p-4 mb-6 transition-colors duration-300`}>
               <div className="flex">
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                  <h3 className={`text-sm font-medium ${isDarkMode ? 'text-red-200' : 'text-red-800'} transition-colors duration-300`}>{error}</h3>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm rounded-lg overflow-hidden transition-colors duration-300`}>
             {/* Game Status */}
-            <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Typing Race
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Game Status: {gameState.gameStatus}
-              </p>
-            </div>
-
-            {/* Players Progress */}
-            <div className="px-4 py-5 sm:px-6">
-              <h4 className="text-sm font-medium text-gray-500">Players Progress</h4>
-              <div className="mt-3 space-y-4">
-                {gameState.players.map((player) => (
-                  <div key={player.username} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900">
-                        {player.username} {player.username === user?.username && "(You)"}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {Math.round(player.progress)}%
-                      </span>
-                    </div>
-                    <div className="bg-gray-200 rounded-full h-2.5">
-                      <div
-                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                        style={{ width: `${player.progress}%` }}
-                      ></div>
+            <div className={`px-4 py-5 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} sm:px-6 transition-colors duration-300`}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className={`text-lg leading-6 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>
+                    Typing Race
+                  </h3>
+                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} transition-colors duration-300`}>
+                    Game Status: {gameState.gameStatus}
+                  </p>
+                </div>
+                {/* Stats Display */}
+                <div className="flex space-x-4">
+                  <div className={`text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="text-sm font-medium">WPM</div>
+                    <div className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{wpm}</div>
+                  </div>
+                  <div className={`text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="text-sm font-medium">Progress</div>
+                    <div className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                      {Math.round((currentWordIndex / (gameState.content?.split(' ').length || 1)) * 100)}%
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
@@ -414,9 +409,60 @@ export default function GamePage() {
             <div className="px-4 py-5 sm:px-6">
               {gameState.gameStatus === 'in_progress' ? (
                 <div className="space-y-6">
+                  {/* Race Track */}
+                  <div className="space-y-4">
+                    <h4 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>Race Track</h4>
+                    {gameState.players
+                      .sort((a, b) => b.progress - a.progress)
+                      .map((player, index) => (
+                        <div key={player.username} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center space-x-2">
+                              <span className={`text-sm font-medium ${
+                                player.username === user?.username 
+                                  ? isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                                  : isDarkMode ? 'text-white' : 'text-gray-900'
+                              } transition-colors duration-300`}>
+                                {index + 1}. {player.username}
+                                {player.username === user?.username && " (You)"}
+                              </span>
+                            </span>
+                            <div className="flex items-center space-x-4">
+                              <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} transition-colors duration-300`}>
+                                WPM: {Math.round(player.wpm)}
+                              </span>
+                              <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} transition-colors duration-300`}>
+                                {Math.round(player.progress)}%
+                              </span>
+                              {index === 0 && <span className="text-yellow-500">👑</span>}
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <div className={`overflow-hidden h-3 text-xs flex rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} transition-colors duration-300`}>
+                              <div
+                                style={{ width: `${player.progress}%` }}
+                                className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                                  player.username === user?.username
+                                    ? isDarkMode ? 'bg-blue-500' : 'bg-blue-600'
+                                    : isDarkMode ? 'bg-gray-600' : 'bg-gray-500'
+                                } transition-all duration-300 rounded-full`}
+                              />
+                            </div>
+                            {/* Car/Player indicator */}
+                            <div 
+                              className="absolute top-1/2 transform -translate-y-1/2 transition-all duration-300 text-lg"
+                              style={{ left: `${player.progress}%` }}
+                            >
+                              {player.username === user?.username ? '🏎️' : '🚗'}
+                            </div>
+                          </div>
+                        </div>
+                    ))}
+                  </div>
+
                   {/* Text to Type */}
-                  <div className="bg-gray-50 p-6 rounded-lg">
-                    <p className="text-lg leading-relaxed font-mono whitespace-pre-wrap">
+                  <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} p-6 rounded-lg transition-colors duration-300`}>
+                    <p className={`text-lg leading-relaxed font-mono whitespace-pre-wrap ${isDarkMode ? 'text-gray-100' : 'text-gray-900'} transition-colors duration-300`}>
                       {(() => {
                         if (!gameState.content) return null;
                         const fullText = gameState.content;
@@ -426,154 +472,55 @@ export default function GamePage() {
                         return words.map((word, wordIndex) => {
                           const wordSpan = (
                             <span key={`word-${wordIndex}`}>
-                              {word.split('').map((char, charInWordIndex) => {
-                                let style = 'text-gray-800'; // Default: untyped
+                              {word.split('').map((char, charIndex) => {
+                                const isCurrentWord = wordIndex === currentWordIndex;
+                                const charClass = isCurrentWord
+                                  ? charIndex < userInput.length
+                                    ? userInput[charIndex] === char
+                                      ? isDarkMode ? 'text-green-400' : 'text-green-600'
+                                      : isDarkMode ? 'text-red-400' : 'text-red-600'
+                                    : isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                                  : wordIndex < currentWordIndex
+                                  ? isDarkMode ? 'text-green-400' : 'text-green-600'
+                                  : isDarkMode ? 'text-gray-100' : 'text-gray-900';
 
-                                if (wordIndex < currentWordIndex) {
-                                  style = 'text-green-600'; // Fully typed past word
-                                } else if (wordIndex === currentWordIndex) {
-                                  if (charInWordIndex < userInput.length) {
-                                    if (userInput[charInWordIndex] === char) {
-                                      style = 'text-green-600'; // Current word, typed correctly
-                                    } else {
-                                      style = 'text-red-600 bg-red-100'; // Current word, typed incorrectly
-                                    }
-                                  } else if (charInWordIndex === userInput.length) {
-                                    style = 'bg-yellow-200 border-b-2 border-black animate-pulse'; // Cursor position
-                                  }
-                                  // Characters in current word beyond userInput.length remain default (text-gray-800)
-                                }
-                                // Characters in future words (wordIndex > currentWordIndex) remain default (text-gray-800)
-                                
-                                const charElement = (
-                                  <span key={`char-${globalCharIndex}`} className={style}>
+                                return (
+                                  <span
+                                    key={`char-${globalCharIndex++}`}
+                                    className={`${charClass} transition-colors duration-300`}
+                                  >
                                     {char}
                                   </span>
                                 );
-                                globalCharIndex++;
-                                return charElement;
                               })}
+                              {wordIndex < words.length - 1 ? ' ' : ''}
                             </span>
                           );
-                          // Add space between words, unless it's the last word
-                          if (wordIndex < words.length - 1) {
-                            const spaceElement = (
-                              <span key={`space-${globalCharIndex}`} className={wordIndex < currentWordIndex ? 'text-green-600' : 'text-gray-800'}>
-                                {' '}
-                              </span>
-                            );
-                            globalCharIndex++;
-                            return [wordSpan, spaceElement];
-                          }
                           return wordSpan;
-                        }).flat();
+                        });
                       })()}
                     </p>
                   </div>
 
                   {/* Input Area */}
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <textarea
-                        ref={inputRef}
-                        value={userInput}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        className={`w-full p-4 border-2 rounded-lg font-mono text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                          isCorrect 
-                            ? 'border-green-300 focus:ring-green-500' 
-                            : 'border-red-300 focus:ring-red-500'
-                        }`}
-                        rows={3}
-                        placeholder="Start typing here..."
-                        autoFocus
-                      />
-                      <div className="absolute top-2 right-2 px-2 py-1 rounded text-sm">
-                        {isCorrect ? (
-                          <span className="text-green-600">✓ Correct</span>
-                        ) : (
-                          <span className="text-red-600">✗ Incorrect</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Typing Stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                      {/* Words */}
-                      <div className="bg-white p-4 rounded-lg shadow">
-                        <div className="text-sm text-gray-500">Words</div>
-                        <div className="text-xl font-semibold">
-                          {currentWordIndex} / {gameState.content.split(' ').length || 1}
-                        </div>
-                      </div>
-                      {/* Progress */}
-                      <div className="bg-white p-4 rounded-lg shadow">
-                        <div className="text-sm text-gray-500">Progress</div>
-                        <div className="text-xl font-semibold">
-                          {Math.round((currentWordIndex / (gameState.content.split(' ').length || 1)) * 100)}%
-                        </div>
-                      </div>
-                      {/* WPM Display Box */}
-                      <div className="bg-white p-4 rounded-lg shadow">
-                        <div className="text-sm text-gray-500">WPM</div>
-                        <div className="text-xl font-semibold">
-                          {wpm}
-                        </div>
-                      </div>
-                      {/* Position */}
-                      <div className="bg-white p-4 rounded-lg shadow">
-                        <div className="text-sm text-gray-500">Position</div>
-                        <div className="text-xl font-semibold">
-                          {(gameState.players.sort((a, b) => b.progress - a.progress)
-                            .findIndex(p => p.username === user?.username) + 1) || 1} / {gameState.players.length || 1}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Players Progress Bars */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-medium text-gray-900">Race Progress</h4>
-                    {gameState.players
-                      .sort((a, b) => b.progress - a.progress)
-                      .map((player, index) => (
-                        <div key={player.username} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center space-x-2">
-                              <span className={`text-sm font-medium ${
-                                player.username === user?.username 
-                                  ? 'text-blue-600' 
-                                  : 'text-gray-900'
-                              }`}>
-                                {index + 1}. {player.username}
-                                {player.username === user?.username && " (You)"}
-                              </span>
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {Math.round(player.progress)}%
-                            </span>
-                          </div>
-                          <div className="relative">
-                            <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
-                              <div
-                                style={{ width: `${player.progress}%` }}
-                                className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                                  player.username === user?.username
-                                    ? 'bg-blue-500'
-                                    : 'bg-gray-500'
-                                } transition-all duration-300`}
-                              />
-                            </div>
-                            {/* Car/Player indicator */}
-                            <div 
-                              className={`absolute top-1/2 transform -translate-y-1/2 transition-all duration-300 text-lg`}
-                              style={{ left: `${player.progress}%` }}
-                            >
-                              🚗
-                            </div>
-                          </div>
-                        </div>
-                    ))}
+                  <div>
+                    <textarea
+                      ref={inputRef}
+                      value={userInput}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      className={`w-full p-4 rounded-lg border ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                      } focus:outline-none focus:ring-2 ${
+                        isCorrect 
+                          ? isDarkMode ? 'focus:ring-blue-500 focus:border-blue-500' : 'focus:ring-blue-500 focus:border-blue-500'
+                          : isDarkMode ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-red-500 focus:border-red-500'
+                      } transition-colors duration-300`}
+                      placeholder="Type here..."
+                      rows={3}
+                    />
                   </div>
                 </div>
               ) : gameState.gameStatus === 'waiting' ? (
@@ -581,74 +528,93 @@ export default function GamePage() {
                   <div className={`${gameState.countdown !== null ? 'animate-bounce' : 'animate-pulse'}`}>
                     {gameState.countdown !== null ? (
                       <>
-                        <p className="text-6xl font-bold text-blue-600 mb-4">{gameState.countdown}</p>
-                        <p className="text-xl font-semibold text-gray-700">Get ready to type!</p>
+                        <p className={`text-6xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} mb-4 transition-colors duration-300`}>{gameState.countdown}</p>
+                        <p className={`text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} transition-colors duration-300`}>Get ready to type!</p>
                       </>
                     ) : (
                       <>
-                        <p className="text-xl font-semibold text-gray-700">Get Ready!</p>
-                        <p className="text-gray-500">Waiting for the game to start...</p>
+                        <p className={`text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} transition-colors duration-300`}>Get Ready!</p>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>Waiting for the game to start...</p>
                       </>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} transition-colors duration-300`}>
                     Players in lobby: {gameState.players.length}
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8 space-y-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Game Finished!</h3>
+                  <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>Game Finished!</h3>
                   
-                  {/* Typing Stats - Also show when finished */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center mt-6 mb-6">
-                    {/* Words */}
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <div className="text-sm text-gray-500">Words</div>
-                      <div className="text-xl font-semibold">
-                        {currentWordIndex} / {gameState.content.split(' ').length || 1}
+                  {/* Final Results */}
+                  <div className="space-y-4">
+                    <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'} p-6 rounded-lg shadow transition-colors duration-300`}>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} transition-colors duration-300`}>Your WPM</div>
+                          <div className={`text-3xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} transition-colors duration-300`}>
+                            {wpm}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} transition-colors duration-300`}>Final Position</div>
+                          <div className={`text-3xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'} transition-colors duration-300`}>
+                            {(gameState.players.sort((a, b) => b.progress - a.progress)
+                              .findIndex(p => p.username === user?.username) + 1)} / {gameState.players.length}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    {/* Progress */}
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <div className="text-sm text-gray-500">Progress</div>
-                      <div className="text-xl font-semibold">
-                        {Math.round((currentWordIndex / (gameState.content.split(' ').length || 1)) * 100)}%
-                      </div>
-                    </div>
-                    {/* WPM Display Box */}
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <div className="text-sm text-gray-500">WPM</div>
-                      <div className="text-xl font-semibold">
-                        {wpm}
-                      </div>
-                    </div>
-                    {/* Position */}
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <div className="text-sm text-gray-500">Position</div>
-                      <div className="text-xl font-semibold">
-                        {(gameState.players.sort((a, b) => b.progress - a.progress)
-                          .findIndex(p => p.username === user?.username) + 1) || 1} / {gameState.players.length || 1}
+
+                    {/* Final Rankings */}
+                    <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-white'} p-6 rounded-lg shadow transition-colors duration-300`}>
+                      <h4 className={`text-lg font-medium mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>Final Rankings</h4>
+                      <div className="space-y-3">
+                        {gameState.players
+                          .sort((a, b) => b.progress - a.progress)
+                          .map((player, index) => (
+                            <div key={player.username} 
+                              className={`flex items-center justify-between p-3 rounded-lg ${
+                                player.username === user?.username
+                                  ? isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'
+                                  : ''
+                              } transition-colors duration-300`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <span className={`text-2xl ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-yellow-600' : ''}`}>
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </span>
+                                <span className={`text-lg ${
+                                  player.username === user?.username
+                                    ? isDarkMode ? 'text-blue-400 font-bold' : 'text-blue-600 font-bold'
+                                    : isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                                }`}>
+                                  {player.username}
+                                  {player.username === user?.username && " (You)"}
+                                </span>
+                              </div>
+                              <div className={`text-lg font-medium ${
+                                index === 0 
+                                  ? isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+                                  : isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                              }`}>
+                                {Math.round(player.progress)}%
+                              </div>
+                            </div>
+                        ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {gameState.players
-                      .sort((a, b) => b.progress - a.progress) // Sort by progress for final ranking
-                      .map((player, index) => (
-                        <div key={player.username} className={`text-lg ${
-                          index === 0 ? 'text-yellow-600 font-bold' : 'text-gray-600'
-                        }`}>
-                          {index + 1}. {player.username} - {Math.round(player.progress)}%
-                          {player.username === user?.username && " (You)"}
-                        </div>
-                    ))}
-                  </div>
                   <div className="mt-6">
                     <button
                       onClick={handleReturnToLobby}
                       disabled={isReturningToLobby}
-                      className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+                      className={`inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+                        isDarkMode
+                          ? 'bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600'
+                          : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'
+                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-300`}
                     >
                       {isReturningToLobby ? 'Returning...' : 'Return to Lobby List'}
                     </button>

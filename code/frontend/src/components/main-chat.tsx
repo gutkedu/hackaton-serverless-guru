@@ -10,6 +10,7 @@ import {
   TopicSubscribeResponse,
 } from "@gomomento/sdk-web";
 import { useEffect, useState, useRef } from "react";
+import { useTheme } from "@/app/layout";
 
 interface Message {
   id: string;
@@ -21,6 +22,8 @@ interface Message {
 export default function MainChat() {
   const { user } = useAuth();
   const { getToken } = useTopicsToken();
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark" || (theme === "system" && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
@@ -250,22 +253,25 @@ export default function MainChat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow overflow-hidden">
-      <div className="bg-blue-600 px-4 py-3">
+    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-lg overflow-hidden transition-colors duration-300`}>
+      <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-blue-600'} px-4 py-3 transition-colors duration-300`}>
         <h3 className="text-lg font-medium text-white">Main Chat</h3>
         <div className="flex justify-between items-center">
-          <div className="text-sm text-blue-100">
+          <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-blue-100'}`}>
             {isConnected ? "Connected" : "Disconnected"}
           </div>
           {!isConnected && (
             <button
               onClick={() => {
-                // Reset error first
                 setError("Reconnecting to chat...");
-                // Simply initialize the topic client with a fresh token
                 initTopicClient();
               }}
-              className="bg-blue-700 text-xs text-white px-2 py-1 rounded hover:bg-blue-800 focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className={`${isDarkMode 
+                ? 'bg-gray-600 hover:bg-gray-500' 
+                : 'bg-blue-700 hover:bg-blue-800'} 
+                text-xs text-white px-2 py-1 rounded focus:outline-none focus:ring-1 
+                ${isDarkMode ? 'focus:ring-gray-400' : 'focus:ring-blue-300'} 
+                transition-colors duration-300`}
             >
               Reconnect
             </button>
@@ -274,11 +280,14 @@ export default function MainChat() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-2">
+        <div className={`${isDarkMode 
+          ? 'bg-red-900/20 border-red-700 text-red-300' 
+          : 'bg-red-50 border-red-400 text-red-700'} 
+          border-l-4 p-4 mb-2 transition-colors duration-300`}>
           <div className="flex">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-red-400"
+                className={`h-5 w-5 ${isDarkMode ? 'text-red-500' : 'text-red-400'}`}
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
@@ -291,16 +300,16 @@ export default function MainChat() {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[500px]">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[500px] ${isDarkMode ? 'bg-gray-800' : 'bg-white'} transition-colors duration-300`}>
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500 italic">
+            <p className={`italic ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               No messages yet. Start the conversation!
             </p>
           </div>
@@ -317,11 +326,11 @@ export default function MainChat() {
               <div
                 className={`rounded-lg px-4 py-2 max-w-[80%] break-words ${
                   message.author === (user?.username || "Anonymous")
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-900"
-                }`}
+                    ? `${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'} text-white`
+                    : `${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`
+                } transition-colors duration-300`}
               >
-                <div className="text-xs mb-1 font-medium">
+                <div className={`text-xs mb-1 font-medium ${isDarkMode ? 'text-gray-300' : ''}`}>
                   {message.author === (user?.username || "Anonymous")
                     ? "You"
                     : message.author}
@@ -337,10 +346,14 @@ export default function MainChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t p-4">
+      <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} p-4 transition-colors duration-300`}>
         <div className="flex items-center">
           <textarea
-            className="flex-1 border border-gray-300 rounded-l-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className={`flex-1 border rounded-l-md px-4 py-2 resize-none focus:outline-none focus:ring-2 
+              ${isDarkMode 
+                ? 'bg-gray-700 border-gray-600 text-white focus:ring-blue-500' 
+                : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'} 
+              placeholder-gray-400 transition-colors duration-300`}
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -349,7 +362,11 @@ export default function MainChat() {
             rows={1}
           />
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`${isDarkMode 
+              ? 'bg-blue-600 hover:bg-blue-700' 
+              : 'bg-blue-600 hover:bg-blue-700'} 
+              text-white px-4 py-2 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 
+              disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300`}
             onClick={sendMessage}
             disabled={!isConnected || !newMessage.trim()}
           >

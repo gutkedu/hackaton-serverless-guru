@@ -51,7 +51,7 @@ export interface GameStateUpdatedEvent extends BaseGameEvent {
   state: {
     players: Array<{
       username: string;
-      score: number;
+      wpm: number;
       progress: number;
     }>;
     gameStatus: 'in_progress' | 'finished';
