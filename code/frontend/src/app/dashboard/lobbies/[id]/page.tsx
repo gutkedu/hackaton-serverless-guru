@@ -13,6 +13,7 @@ import ProtectedRoute from "@/components/protected-route";
 import { GameEvent, GameEventType } from "@/lib/types/game-events";
 import { MomentoService } from "@/lib/momento-service";
 import { useTopicsToken } from "@/hooks/use-topics-token";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 export default function LobbyDetailsPage() {
   const { user } = useAuth();
@@ -26,6 +27,12 @@ export default function LobbyDetailsPage() {
     "easy" | "medium" | "hard"
   >("medium");
   const { getToken } = useTopicsToken();
+
+  // State for the confirmation modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   // Function to fetch lobby details
   const fetchLobbyDetails = useCallback(async () => {
@@ -164,10 +171,17 @@ export default function LobbyDetailsPage() {
     if (!user?.idToken || !lobby || !id) return;
 
     // Confirm before starting the game
-    if (!window.confirm(`Start game with difficulty: ${selectedDifficulty}?`)) {
-      return;
-    }
+    // if (!window.confirm(`Start game with difficulty: ${selectedDifficulty}?`)) {
+    //   return;
+    // }
+    setModalTitle("Start Game?");
+    setModalMessage(`Are you sure you want to start the game with difficulty: ${selectedDifficulty}?`);
+    setConfirmAction(() => () => handleStartGameInternal());
+    setIsModalOpen(true);
+  };
 
+  const handleStartGameInternal = async () => {
+    if (!user?.idToken || !lobby || !id) return;
     setIsStartingGame(true);
     setError(null);
 
@@ -178,8 +192,8 @@ export default function LobbyDetailsPage() {
       };
 
       await lobbyService.startGame(request, user.idToken);
-      // Redirect to game page or refresh the lobby state
-      await fetchLobbyDetails();
+      // The GAME_STARTED event will trigger navigation, so fetchLobbyDetails might not be strictly needed here
+      // await fetchLobbyDetails(); 
     } catch (err) {
       console.error("Failed to start game:", err);
       setError("Failed to start game. Please try again.");
@@ -193,10 +207,17 @@ export default function LobbyDetailsPage() {
     if (!user?.idToken) return;
 
     // Confirm before leaving
-    if (!window.confirm("Are you sure you want to leave this lobby?")) {
-      return;
-    }
+    // if (!window.confirm("Are you sure you want to leave this lobby?")) {
+    //   return;
+    // }
+    setModalTitle("Leave Lobby?");
+    setModalMessage("Are you sure you want to leave this lobby? This action cannot be undone.");
+    setConfirmAction(() => () => handleLeaveLobbyInternal());
+    setIsModalOpen(true);
+  };
 
+  const handleLeaveLobbyInternal = async () => {
+    if (!user?.idToken) return;
     try {
       await lobbyService.leaveLobby(user.idToken);
       router.push("/dashboard/lobbies");
@@ -425,6 +446,18 @@ export default function LobbyDetailsPage() {
           )}
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={() => {
+          if (confirmAction) {
+            confirmAction();
+          }
+          setIsModalOpen(false);
+        }}
+        title={modalTitle}
+        message={modalMessage}
+      />
     </ProtectedRoute>
   );
 }

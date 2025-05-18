@@ -44,6 +44,11 @@ export default function GamePage() {
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isReturningToLobby, setIsReturningToLobby] = useState(false);
 
+  // WPM related state
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [correctCharsCount, setCorrectCharsCount] = useState(0);
+  const [wpm, setWpm] = useState(0);
+
   // Effect to initialize game state from query params or if game data changes
   useEffect(() => {
     if (initialContentFromQuery && gameId && lobbyId && gameState.gameStatus === 'waiting' && !gameState.content) {
@@ -65,6 +70,10 @@ export default function GamePage() {
           if (prev.countdown <= 1) {
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
             if (inputRef.current) inputRef.current.focus();
+            // Game starts now, record start time for WPM
+            setStartTime(Date.now());
+            setCorrectCharsCount(0);
+            setWpm(0);
             return { ...prev, gameStatus: 'in_progress', countdown: null };
           }
           return { ...prev, countdown: prev.countdown - 1 };
@@ -104,7 +113,6 @@ export default function GamePage() {
       case GameEventType.GAME_STARTED:
         // This case might now be redundant if initialContentFromQuery handles setup.
         // However, it can act as a fallback or for re-joining if the backend resends GAME_STARTED.
-        // Ensure we don't re-initialize if already started from initialContent or a previous GAME_STARTED event.
         if (gameState.gameStatus === 'waiting' && !gameState.content && event.content) {
           console.log('GamePage: GAME_STARTED event initializing game state (fallback/live)');
           lobbyIdRef.current = event.lobbyId; // Ensure lobbyIdRef is set
@@ -122,6 +130,10 @@ export default function GamePage() {
               if (prev.countdown <= 1) {
                 if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                 if (inputRef.current) inputRef.current.focus();
+                // Game starts now, record start time for WPM
+                setStartTime(Date.now());
+                setCorrectCharsCount(0);
+                setWpm(0);
                 return { ...prev, gameStatus: 'in_progress', countdown: null };
               }
               return { ...prev, countdown: prev.countdown - 1 };
@@ -248,6 +260,28 @@ export default function GamePage() {
       setCurrentWordIndex(newWordIndex);
       setUserInput(''); // Clear input for the next word
       setIsCorrect(true); // Reset for the next word
+
+      // WPM Calculation
+      let charsInWord = currentWord.length;
+      if (newWordIndex < words.length) { // Add 1 for the space if it's not the last word
+        charsInWord += 1;
+      }
+      const newCorrectChars = correctCharsCount + charsInWord;
+      setCorrectCharsCount(newCorrectChars);
+
+      if (startTime) {
+        const currentTime = Date.now();
+        const elapsedTimeInMinutes = (currentTime - startTime) / 60000;
+        const calculatedWpm = elapsedTimeInMinutes > 0 ? Math.round((newCorrectChars / 5) / elapsedTimeInMinutes) : 0;
+        console.log(`WPM Update: prevWPM=${wpm}, newCalcWPM=${calculatedWpm}, newCorrectChars=${newCorrectChars}, elapsedMin=${elapsedTimeInMinutes.toFixed(4)}, startTime=${startTime}, currentTime=${currentTime}`);
+        if (elapsedTimeInMinutes > 0) {
+          setWpm(calculatedWpm);
+        } else if (startTime) { 
+          console.warn('WPM calculation skipped: elapsedTimeInMinutes was not positive.', {elapsedTimeInMinutes, newCorrectChars, startTime, currentTime});
+        }
+      } else {
+        console.warn('WPM calculation skipped: startTime is null.');
+      }
 
       // Calculate progress
       const progress = (newWordIndex / words.length) * 100;
@@ -464,24 +498,34 @@ export default function GamePage() {
                     </div>
 
                     {/* Typing Stats */}
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                      {/* Words */}
                       <div className="bg-white p-4 rounded-lg shadow">
                         <div className="text-sm text-gray-500">Words</div>
                         <div className="text-xl font-semibold">
-                          {currentWordIndex} / {gameState.content.split(' ').length}
+                          {currentWordIndex} / {gameState.content.split(' ').length || 1}
                         </div>
                       </div>
+                      {/* Progress */}
                       <div className="bg-white p-4 rounded-lg shadow">
                         <div className="text-sm text-gray-500">Progress</div>
                         <div className="text-xl font-semibold">
-                          {Math.round((currentWordIndex / gameState.content.split(' ').length) * 100)}%
+                          {Math.round((currentWordIndex / (gameState.content.split(' ').length || 1)) * 100)}%
                         </div>
                       </div>
+                      {/* WPM Display Box */}
+                      <div className="bg-white p-4 rounded-lg shadow">
+                        <div className="text-sm text-gray-500">WPM</div>
+                        <div className="text-xl font-semibold">
+                          {wpm}
+                        </div>
+                      </div>
+                      {/* Position */}
                       <div className="bg-white p-4 rounded-lg shadow">
                         <div className="text-sm text-gray-500">Position</div>
                         <div className="text-xl font-semibold">
-                          {gameState.players.sort((a, b) => b.progress - a.progress)
-                            .findIndex(p => p.username === user?.username) + 1} / {gameState.players.length}
+                          {(gameState.players.sort((a, b) => b.progress - a.progress)
+                            .findIndex(p => p.username === user?.username) + 1) || 1} / {gameState.players.length || 1}
                         </div>
                       </div>
                     </div>
@@ -554,9 +598,43 @@ export default function GamePage() {
               ) : (
                 <div className="text-center py-8 space-y-4">
                   <h3 className="text-2xl font-bold text-gray-900">Game Finished!</h3>
+                  
+                  {/* Typing Stats - Also show when finished */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center mt-6 mb-6">
+                    {/* Words */}
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <div className="text-sm text-gray-500">Words</div>
+                      <div className="text-xl font-semibold">
+                        {currentWordIndex} / {gameState.content.split(' ').length || 1}
+                      </div>
+                    </div>
+                    {/* Progress */}
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <div className="text-sm text-gray-500">Progress</div>
+                      <div className="text-xl font-semibold">
+                        {Math.round((currentWordIndex / (gameState.content.split(' ').length || 1)) * 100)}%
+                      </div>
+                    </div>
+                    {/* WPM Display Box */}
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <div className="text-sm text-gray-500">WPM</div>
+                      <div className="text-xl font-semibold">
+                        {wpm}
+                      </div>
+                    </div>
+                    {/* Position */}
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <div className="text-sm text-gray-500">Position</div>
+                      <div className="text-xl font-semibold">
+                        {(gameState.players.sort((a, b) => b.progress - a.progress)
+                          .findIndex(p => p.username === user?.username) + 1) || 1} / {gameState.players.length || 1}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     {gameState.players
-                      .sort((a, b) => b.progress - a.progress)
+                      .sort((a, b) => b.progress - a.progress) // Sort by progress for final ranking
                       .map((player, index) => (
                         <div key={player.username} className={`text-lg ${
                           index === 0 ? 'text-yellow-600 font-bold' : 'text-gray-600'
