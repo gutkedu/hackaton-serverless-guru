@@ -104,7 +104,6 @@ export default function GamePage() {
   // Effect to initialize game state from query params or if game data changes
   useEffect(() => {
     if (initialContentFromQuery && gameId && lobbyId && gameState.gameStatus === 'waiting' && !gameState.content) {
-      console.log('Initializing game from query parameters:', { gameId, lobbyId });
       lobbyIdRef.current = lobbyId;
       
       setGameState(prev => ({
@@ -122,7 +121,6 @@ export default function GamePage() {
           if (prev.countdown <= 1) {
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
             if (inputRef.current) inputRef.current.focus();
-            // Game starts now, record start time for WPM
             setStartTime(Date.now());
             setCorrectCharsCount(0);
             setWpm(0);
@@ -148,34 +146,20 @@ export default function GamePage() {
   }, []);
 
   const handleGameEvent = useCallback((event: GameEvent) => {
-    // Critical: Filter events for the current gameId!
     if (event.gameId !== gameId) {
       return;
     }
-    // Also ensure lobbyId matches if events carry it explicitly and it's relevant for filtering
     if (event.lobbyId && event.lobbyId !== lobbyIdRef.current && event.lobbyId !== lobbyId) {
       return;
     }
 
-    console.log('GamePage: Received game event for current game:', event);
-
     const handleGameEnd = async (finalPlayersFromEvent?: GameEndedEvent['players']) => {
-      console.log('Starting game end process', {
-        lobbyId: lobbyIdRef.current,
-        // Log which player list is being considered
-        playersSource: finalPlayersFromEvent ? 'event' : 'gameState',
-        eventPlayers: finalPlayersFromEvent,
-        gameStatePlayers: gameState.players,
-        userIdToken: !!user?.idToken
-      });
-
       setGameState(prev => ({
         ...prev,
         gameStatus: 'finished',
         countdown: null
       }));
 
-      // Call the game/end route with the final game state
       if (user?.idToken) {
         try {
           const currentLobbyId = lobbyIdRef.current;
@@ -188,12 +172,11 @@ export default function GamePage() {
           }
 
           if (!Array.isArray(currentPlayers)) {
-            console.error('GamePage: Invalid players data for endGame (from event or gameState):', currentPlayers);
+            console.error('GamePage: Invalid players data for endGame:', currentPlayers);
             setError('Failed to end game: Players data is not an array.');
             return;
           }
 
-          // Use the gameUsername from auth context if available, otherwise fallback to the one from the game state
           const payload = {
             lobbyId: currentLobbyId,
             players: currentPlayers.map(player => ({
@@ -202,33 +185,25 @@ export default function GamePage() {
               progress: player.progress
             }))
           };
-          console.log('Sending game end request with payload:', payload);
           
           await gameService.endGame(payload, user.idToken);
-          console.log('Successfully sent game end data to API');
         } catch (error) {
           console.error('Failed to send game end data:', error);
           setError('Failed to send game end data');
         }
       }
-
-      console.log("Game ended. Staying on GamePage for now.");
     };
 
     switch (event.type) {
       case GameEventType.GAME_STARTED:
-        // This case might now be redundant if initialContentFromQuery handles setup.
-        // However, it can act as a fallback or for re-joining if the backend resends GAME_STARTED.
         if (gameState.gameStatus === 'waiting' && !gameState.content && event.content) {
-          console.log('GamePage: GAME_STARTED event initializing game state (fallback/live)');
-          lobbyIdRef.current = event.lobbyId; // Ensure lobbyIdRef is set
+          lobbyIdRef.current = event.lobbyId;
           setGameState(prev => ({
             ...prev,
             content: event.content,
             countdown: 5,
             players: prev.players.map(p => ({ ...p, progress: 0, wpm: 0 }))
           }));
-          // Start countdown (copied from above, ensure this is not duplicated if called from initial setup too)
           if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
           countdownIntervalRef.current = setInterval(() => {
             setGameState(prev => {
@@ -236,7 +211,6 @@ export default function GamePage() {
               if (prev.countdown <= 1) {
                 if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
                 if (inputRef.current) inputRef.current.focus();
-                // Game starts now, record start time for WPM
                 setStartTime(Date.now());
                 setCorrectCharsCount(0);
                 setWpm(0);
@@ -248,23 +222,19 @@ export default function GamePage() {
           setCurrentWordIndex(0);
           setUserInput('');
           setIsCorrect(true);
-        } else {
-          console.log('GamePage: GAME_STARTED event received but game already initialized or no content.');
         }
         break;
       case GameEventType.GAME_STATE_UPDATED:
         const stateEvent = event as GameStateUpdatedEvent;
         setGameState(prev => {
-          // Create a map of existing players for easy lookup
           const existingPlayers = new Map(prev.players.map(p => [p.username, p]));
           
-          // Update or add new players while preserving existing player data
           stateEvent.state.players.forEach(player => {
             if (existingPlayers.has(player.username)) {
               const existing = existingPlayers.get(player.username)!;
               existingPlayers.set(player.username, {
                 ...existing,
-                progress: Math.min(player.progress, 100), // Ensure progress doesn't exceed 100%
+                progress: Math.min(player.progress, 100),
                 wpm: player.wpm
               });
             } else {
@@ -279,7 +249,7 @@ export default function GamePage() {
             ...prev,
             players: Array.from(existingPlayers.values()),
             gameStatus: stateEvent.state.gameStatus === 'finished' ? 'finished' : prev.gameStatus,
-            countdown: prev.countdown // Preserve countdown state
+            countdown: prev.countdown
           };
         });
         break;
@@ -296,7 +266,11 @@ export default function GamePage() {
   // Subscribe to game events (both lobby and game topics)
   useEffect(() => {
     if (!user?.idToken || !lobbyId || !gameId) { 
-      console.error('GamePage: Missing required parameters for subscription:', { lobbyId, gameId, userIdToken: !!user?.idToken });
+      if (!user?.idToken) {
+        setError('Authentication required. Please sign in again.');
+        router.push('/login');
+        return;
+      }
       setError('Missing required game parameters for subscription');
       return;
     }
@@ -317,7 +291,6 @@ export default function GamePage() {
           cacheName: tokenResponse.cacheName
         }, user.idToken);
 
-        // Subscribe to both lobby and game topics
         await Promise.all([
           momentoService.subscribeToLobby(
             lobbyId,
@@ -328,7 +301,6 @@ export default function GamePage() {
             },
             (error) => {
               if (isSubscribed) {
-                console.error('GamePage: Lobby subscription error:', error);
                 setError('Failed to connect to lobby events. Please refresh the page.');
               }
             }
@@ -342,18 +314,19 @@ export default function GamePage() {
             },
             (error) => {
               if (isSubscribed) {
-                console.error('GamePage: Game subscription error:', error);
                 setError('Failed to connect to game events. Please refresh the page.');
               }
             }
           )
         ]);
-        
-        console.log(`GamePage: Successfully set up subscriptions for lobby ${lobbyId} and game ${gameId}`);
       } catch (err) {
-        console.error('GamePage: Failed to subscribe to events:', err);
         if (isSubscribed) {
-          setError('Failed to connect to game events. Please refresh the page.');
+          if (err instanceof Error && err.message.includes('Authentication expired')) {
+            setError('Your session has expired. Please sign in again.');
+            router.push('/login');
+          } else {
+            setError('Failed to connect to game events. Please refresh the page.');
+          }
         }
       }
     };
@@ -363,13 +336,13 @@ export default function GamePage() {
     return () => {
       isSubscribed = false;
       if (lobbyId) {
-        momentoService.unsubscribeFromLobby(lobbyId).catch(console.error);
+        momentoService.unsubscribeFromLobby(lobbyId).catch(() => {});
       }
       if (gameId) {
-        momentoService.unsubscribeFromGame(gameId).catch(console.error);
+        momentoService.unsubscribeFromGame(gameId).catch(() => {});
       }
     };
-  }, [user, lobbyId, gameId, getToken, handleGameEvent]);
+  }, [user, lobbyId, gameId, getToken, handleGameEvent, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (gameState.gameStatus !== 'in_progress' || !lobbyIdRef.current) return;
@@ -379,7 +352,6 @@ export default function GamePage() {
     
     const words = gameState.content.split(' ');
     if (currentWordIndex >= words.length) {
-      console.warn("Attempting to process input after all words are typed.");
       return;
     }
     const currentWord = words[currentWordIndex];
@@ -395,7 +367,6 @@ export default function GamePage() {
       setUserInput('');
       setIsCorrect(true);
 
-      // WPM Calculation
       let charsInWord = currentWord.length;
       if (newWordIndex < words.length) {
         charsInWord += 1;
@@ -437,25 +408,20 @@ export default function GamePage() {
       };
 
       momentoService.publish(`lobby-${lobbyIdRef.current}`, JSON.stringify(progressEvent))
-        .catch((error: Error) => {
-          console.error('Failed to send progress update:', error);
+        .catch(() => {
           setError('Failed to send progress update');
         });
 
       if (newWordIndex >= words.length) {
         setGameState(prev => ({...prev, gameStatus: 'finished'}));
 
-        // Ensure the current player's final stats are accurately reflected in the event
         const finalPlayersList = gameState.players.map(p => {
           if (p.username === user?.username) {
-            // User who finished: update their progress to 100 and use current WPM
             return { ...p, progress: 100, wpm: wpm };
           }
-          return p; // Other players remain as they are in current gameState
+          return p;
         });
 
-        // If the current user was not in the gameState.players list for some reason (e.g. solo play, new player)
-        // ensure they are added.
         if (user?.username && !finalPlayersList.some(p => p.username === user.username)) {
           finalPlayersList.push({
             username: user.username,
@@ -469,12 +435,11 @@ export default function GamePage() {
           gameId: gameId as string,
           lobbyId: lobbyIdRef.current,
           timestamp: Date.now(),
-          players: finalPlayersList // Use the accurately constructed list
+          players: finalPlayersList
         };
 
         momentoService.publish(`lobby-${lobbyIdRef.current}`, JSON.stringify(gameEndedEvent))
-          .catch((error: Error) => {
-            console.error('Failed to send game ended event:', error);
+          .catch(() => {
             setError('Failed to send game ended event');
           });
       }
@@ -497,15 +462,12 @@ export default function GamePage() {
     try {
       const response = await lobbyService.returnToLobby(lobbyId, user.idToken);
       if (response.success && response.lobby && response.lobby.id) {
-        console.log(`Successfully called returnToLobby endpoint for lobby ${response.lobby.id}, navigating directly...`);
         router.push(`/dashboard/lobbies/${response.lobby.id}`);
       } else {
         const errorMessage = (response.lobby as any)?.error || response.lobby?.toString() || "Failed to return to lobby via API or missing lobby data in response.";
-        console.error("API call to returnToLobby did not indicate success or missing lobby ID in response:", response);
         setError(errorMessage);
       }
     } catch (err) {
-      console.error("Error calling returnToLobby service:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred while trying to return to lobby.");
     } finally {
       setIsReturningToLobby(false);
@@ -520,7 +482,7 @@ export default function GamePage() {
         const userInfo = await userService.getCurrentUser(user.idToken);
         setCurrentUserInfo(userInfo);
       } catch (err) {
-        console.error("Failed to fetch user info:", err);
+        setError('Failed to fetch user info');
       }
     };
     fetchUserInfo();
