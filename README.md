@@ -1,6 +1,10 @@
-# Serverless Hackathon Project
+# Racing Through the Cloud: A TypeRacer-Inspired Game Built for the ServerlessGuru Hackathon
 
 A serverless application built with AWS SAM, featuring a Next.js frontend and a serverless backend.
+
+## Article:
+
+Medium: [Racing Through the Cloud]([https://](https://medium.com/@eduardo.pedogutkoski/racing-through-the-cloud-a-typeracer-inspired-game-built-for-the-serverlessguru-hackathon-8a3522ff2003))
 
 ## Project Structure
 
@@ -17,6 +21,14 @@ A serverless application built with AWS SAM, featuring a Next.js frontend and a 
 └── .github/
     └── workflows/        # GitHub Actions deployment workflows
 ```
+
+## Game Preview
+
+![Game Preview](docs/assets/hackaton-game.gif)
+
+## Architecture
+
+![System Architecture](docs/assets/arch.webp)
 
 ## Prerequisites
 
