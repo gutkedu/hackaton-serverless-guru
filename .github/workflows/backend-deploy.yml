@@ -37,6 +37,10 @@ jobs:
       - name: Install dependencies
         working-directory: code/backend
         run: npm ci
+      
+      - name: check build
+        working-directory: code/backend
+        run: npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
