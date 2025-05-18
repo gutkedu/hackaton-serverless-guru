@@ -26,7 +26,7 @@
     "@middy/secrets-manager": "^6.2.2",
     "@types/aws-lambda": "^8.10.147",
     "@types/node": "^22.15.18",
-    "aws-jwt-verify": "^4.0.1",
+    "aws-jwt-verify": "^5.0.1",
     "eslint": "^9.22.0",
     "ksuid": "^3.0.0",
     "tsconfig-paths": "^4.2.0",
