@@ -15,23 +15,11 @@ Resources:
   BackendStackApplication:
     Type: AWS::Serverless::Application
     Properties:
-      Location: ../../code/backend/infra/cf/lambda.yaml
+      Location: ../../code/backend/template.yaml
       Parameters:
         TableName: !ImportValue "StatefulStack-TableName"
         UserPoolId: !ImportValue "StatefulStack-UserPoolId"
         UserPoolClientId: !ImportValue "StatefulStack-UserPoolClientId"
-  
-  ContainerStackApplication:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: ../../code/backend/infra/cf/app-runner.yaml
-      Parameters:
-        AppName: !Ref AppName
-        TableName: !ImportValue "StatefulStack-TableName"
-        UserPoolId: !ImportValue "StatefulStack-UserPoolId"
-        UserPoolClientId: !ImportValue "StatefulStack-UserPoolClientId"
-        ImageUri: !Ref ContainerImageUri
-        ContainerPort: "3000"
 
 Outputs:  
   ApiGatewayURL:
