@@ -70,6 +70,14 @@ export default function DashboardPage() {
                 >
                   Game Lobbies
                 </Link>
+                <Link
+                  href="/dashboard/statistics"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${isDarkMode 
+                    ? 'text-blue-300 hover:text-blue-100 hover:bg-gray-700' 
+                    : 'text-blue-600 hover:text-blue-800 hover:bg-gray-100'} transition-colors duration-300`}
+                >
+                  Rankings
+                </Link>
                 <button
                   onClick={toggleTheme}
                   className={`p-2 rounded-full ${isDarkMode 
