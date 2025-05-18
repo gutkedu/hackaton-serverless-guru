@@ -61,6 +61,8 @@ jobs:
         run: |
           sam deploy \
             --parameter-overrides "MomentoCacheApiKey=${{ secrets.MOMENTO_CACHE_API_KEY }}" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
 
       - name: Deploy Stateless Resources
         if: github.ref == 'refs/heads/main'
@@ -68,3 +70,5 @@ jobs:
         run: |
           sam deploy \
             --parameter-overrides "AppName=\"ServerlessHackaton\"" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
