@@ -3,19 +3,10 @@
  */
 
 // Use the proxy in development to avoid CORS issues
-const DIRECT_API_URL =
-  "https://gz8ep2fj9g.execute-api.us-east-1.amazonaws.com/api";
-const PROXY_API_URL = "/api/proxy"; // Local proxy to avoid CORS issues
+// Use ENV variable in production, fallback to proxy in development to avoid CORS
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/proxy";
 
-// Use proxy in development mode and direct in production
-const isDev = process.env.NODE_ENV === "development";
-const BASE_URL = isDev ? PROXY_API_URL : DIRECT_API_URL;
-
-console.log(
-  `API client using ${
-    isDev ? "proxy" : "direct"
-  } mode with base URL: ${BASE_URL}`
-);
+console.log(`API client using base URL: ${BASE_URL}`);
 
 interface ApiOptions {
   method: "GET" | "POST" | "PUT" | "DELETE";
@@ -56,21 +47,28 @@ export async function api<T = any>(
       let errorDetails = {};
       try {
         errorDetails = JSON.parse(errorBody);
-      } catch (e) {
+      } catch (_) {
         // If parsing fails, use the raw text if available, or an empty object
-        errorDetails = errorBody ? { rawError: errorBody } : {}; 
+        errorDetails = errorBody ? { rawError: errorBody } : {};
       }
-      
+
       // Special handling for lobby join 500 errors
-      if (endpoint === '/game/lobbies/join' && response.status === 500) {
+      if (endpoint === "/game/lobbies/join" && response.status === 500) {
         // Return a partial success response
-        return { 
-          message: "Joined lobby with warnings", 
-          warning: (errorDetails as any).message || (errorDetails as any).rawError || "Server encountered an error" 
+        return {
+          message: "Joined lobby with warnings",
+          warning:
+            (errorDetails as any).message ||
+            (errorDetails as any).rawError ||
+            "Server encountered an error",
         } as T;
       }
-      
-      throw new Error((errorDetails as any).message || (errorDetails as any).rawError || `API Error: ${response.status}`);
+
+      throw new Error(
+        (errorDetails as any).message ||
+          (errorDetails as any).rawError ||
+          `API Error: ${response.status}`
+      );
     }
 
     // Handle 204 No Content specifically

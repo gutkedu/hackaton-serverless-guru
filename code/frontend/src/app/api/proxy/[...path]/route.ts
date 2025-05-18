@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL =
-  "https://gz8ep2fj9g.execute-api.us-east-1.amazonaws.com/api";
-
+// Get API base URL from environment variable, with a fallback
+const API_BASE_URL = process.env.API_BASE_URL;
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -69,7 +68,7 @@ export async function POST(
     console.log(`Proxying POST request to ${apiUrl}`, {
       headers,
       body,
-      path
+      path,
     });
 
     const response = await fetch(apiUrl, {
@@ -90,25 +89,28 @@ export async function POST(
 
     // For other statuses, attempt to parse JSON
     const data = await response.json().catch(() => ({
-      error: `Failed to parse JSON response from API (status: ${response.status})`
+      error: `Failed to parse JSON response from API (status: ${response.status})`,
     }));
 
     console.log(`Proxy response for ${path}:`, {
       status: response.status,
-      data
+      data,
     });
 
     // Return the response with appropriate status and headers
     return NextResponse.json(data, {
       status: response.status,
       headers: {
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+      },
     });
   } catch (error) {
     console.error(`Proxy error for POST /${path}:`, error);
     return NextResponse.json(
-      { error: "Failed to send data to API", details: error instanceof Error ? error.message : String(error) },
+      {
+        error: "Failed to send data to API",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

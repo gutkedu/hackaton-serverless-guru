@@ -1,0 +1,8 @@
+# API Configuration
+# Use NEXT_PUBLIC_API_BASE_URL for client-side access to API
+# If not set, will use the proxy in development or default API URL in production
+NEXT_PUBLIC_API_BASE_URL=https://your-api-url/api
+
+# Alternative: API_BASE_URL can be set during build time
+# If both are set, NEXT_PUBLIC_API_BASE_URL takes precedence
+API_BASE_URL=https://your-api-url/api
