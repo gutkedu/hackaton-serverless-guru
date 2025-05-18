@@ -10,6 +10,7 @@ import { useTopicsToken } from "@/hooks/use-topics-token";
 import { lobbyService } from "@/lib/lobby-service";
 import { useTheme } from "@/app/layout";
 import { gameService } from "@/lib/game-service";
+import { userService, UserInfo } from "@/lib/user-service";
 
 interface GameState {
   content: string;
@@ -49,6 +50,7 @@ export default function GamePage() {
   const [isReturningToLobby, setIsReturningToLobby] = useState(false);
   const wpmIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number | null>(null);
+  const [currentUserInfo, setCurrentUserInfo] = useState<UserInfo | null>(null);
 
   // WPM related state
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -191,10 +193,11 @@ export default function GamePage() {
             return;
           }
 
+          // Use the gameUsername from auth context if available, otherwise fallback to the one from the game state
           const payload = {
             lobbyId: currentLobbyId,
             players: currentPlayers.map(player => ({
-              username: player.username,
+              username: player.username === user?.username ? (user?.gameUsername || player.username) : player.username,
               wpm: player.wpm,
               progress: player.progress
             }))
@@ -443,7 +446,7 @@ export default function GamePage() {
         setGameState(prev => ({...prev, gameStatus: 'finished'}));
 
         // Ensure the current player's final stats are accurately reflected in the event
-        let finalPlayersList = gameState.players.map(p => {
+        const finalPlayersList = gameState.players.map(p => {
           if (p.username === user?.username) {
             // User who finished: update their progress to 100 and use current WPM
             return { ...p, progress: 100, wpm: wpm };
@@ -508,6 +511,20 @@ export default function GamePage() {
       setIsReturningToLobby(false);
     }
   };
+
+  // Fetch current user info
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (!user?.idToken) return;
+      try {
+        const userInfo = await userService.getCurrentUser(user.idToken);
+        setCurrentUserInfo(userInfo);
+      } catch (err) {
+        console.error("Failed to fetch user info:", err);
+      }
+    };
+    fetchUserInfo();
+  }, [user]);
 
   return (
     <ProtectedRoute>

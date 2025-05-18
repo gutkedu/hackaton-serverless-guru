@@ -9,6 +9,7 @@ import {
   ResetPasswordRequest,
   TopicsTokenResponse,
 } from "../lib/auth-service";
+import { userService } from "../lib/user-service";
 
 interface User {
   idToken: string;
@@ -18,6 +19,7 @@ interface User {
   topicsTokens: Record<string, TopicsTokenResponse>;
   username?: string;
   sub?: string;
+  gameUsername?: string;
 }
 
 interface AuthContextType {
@@ -140,6 +142,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Save to state and localStorage
       setUser(userObject);
       localStorage.setItem(TOKEN_KEY, JSON.stringify(userObject));
+
+      // Fetch game username from /game/me
+      try {
+        const userInfo = await userService.getCurrentUser(response.idToken);
+        if (userInfo.username) {
+          userObject.gameUsername = userInfo.username;
+          setUser(userObject);
+          localStorage.setItem(TOKEN_KEY, JSON.stringify(userObject));
+        }
+      } catch (error) {
+        console.error("Failed to fetch game username:", error);
+      }
 
       // Fetch essential topics tokens once at login
       try {
