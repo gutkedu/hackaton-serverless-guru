@@ -7,5 +7,5 @@ region = "us-east-1"
 profile = "gutkedu-terraform"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
-parameter_overrides = "AppName=\"ServerlessHackaton\" ContainerImageUri=\"396608768142.dkr.ecr.us-east-1.amazonaws.com/hackaton-container-app:latest\""
+parameter_overrides = "AppName=\"ServerlessHackaton\""
 image_repositories = []
