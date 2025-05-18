@@ -821,6 +821,93 @@ Resources:
           - '@aws-sdk/client-eventbridge'
 
   ##########################################################################
+  #                         Event Functions                               #
+  ##########################################################################
+  ProcessGameStartedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ProcessGameStartedFunction
+      Description: Processes gameStarted events from EventBridge
+      Handler: process-game-started.processGameStartedHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        GameStartedEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !ImportValue "StatefulStack-EventBusName"
+            Pattern:
+              source:
+                - com.gameserviceapp
+              detail-type:
+                - gameStarted
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/events/process-game-started.ts
+        External:
+          - 'zod'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+          - '@gomomento/sdk'
+
+  ProcessGameEndedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ProcessGameEndedFunction
+      Description: Processes gameEnded events from EventBridge
+      Handler: process-game-ended.processGameEndedHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        GameEndedEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !ImportValue "StatefulStack-EventBusName"
+            Pattern:
+              source:
+                - com.gameserviceapp
+              detail-type:
+                - gameEnded
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/events/process-game-ended.ts
+        External:
+          - 'zod'
+          - 'ksuid'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
+
+  ##########################################################################
   #                              API Gateway                               #
   ##########################################################################
   ApiGateway:

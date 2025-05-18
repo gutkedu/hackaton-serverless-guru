@@ -5,6 +5,8 @@ import { LobbyStatus } from '@/core/entities/lobby.js'
 import { EventProvider } from '@/providers/event/event-provider.js'
 import { EventBridgeType } from '@/providers/event/events-dto.js'
 import { BusinessError } from '@/shared/errors/business-error.js'
+import { GameEndedDetail } from '@/providers/event/events-detail.js'
+import { GameEventType } from '@/core/events/game-events.js'
 
 interface EndGameInput {
   lobbyId: string
@@ -27,62 +29,57 @@ export class EndGameUseCase {
   async execute(input: EndGameInput): Promise<void> {
     logger.info('EndGameUseCase - Starting to process game end', { lobbyId: input.lobbyId })
 
-    try {
-      const lobby = await this.lobbyRepository.getById(input.lobbyId)
-      if (!lobby) {
-        logger.warn('EndGameUseCase - Lobby not found', { lobbyId: input.lobbyId })
-        throw new BusinessError(`Lobby with ID ${input.lobbyId} not found`)
+    const lobby = await this.lobbyRepository.getById(input.lobbyId)
+    if (!lobby) {
+      logger.warn('EndGameUseCase - Lobby not found', { lobbyId: input.lobbyId })
+      throw new BusinessError(`Lobby with ID ${input.lobbyId} not found`)
+    }
+
+    const sortedPlayers = [...input.players].sort((a, b) => {
+      if (b.progress !== a.progress) {
+        return b.progress - a.progress
       }
+      return b.wpm - a.wpm
+    })
+    const winner = sortedPlayers.length > 0 ? sortedPlayers[0] : undefined
 
-      const sortedPlayers = [...input.players].sort((a, b) => {
-        if (b.progress !== a.progress) {
-          return b.progress - a.progress
+    for (const player of input.players) {
+      const playerEntity = await this.playerRepository.getByUsername(player.username)
+      if (playerEntity) {
+        playerEntity.incrementGamesPlayed()
+        if (player.wpm > 0) {
+          playerEntity.updateBestWpm(player.wpm)
         }
-        return b.wpm - a.wpm
-      })
-      const winner = sortedPlayers.length > 0 ? sortedPlayers[0] : undefined
-
-      for (const player of input.players) {
-        const playerEntity = await this.playerRepository.getByUsername(player.username)
-        if (playerEntity) {
-          playerEntity.incrementGamesPlayed()
-          if (player.wpm > 0) {
-            playerEntity.updateBestWpm(player.wpm)
-          }
-          if (winner && winner.username === player.username) {
-            playerEntity.incrementWins()
-          }
-          await this.playerRepository.update(playerEntity)
+        if (winner && winner.username === player.username) {
+          playerEntity.incrementWins()
         }
+        await this.playerRepository.update(playerEntity)
       }
+    }
 
-      // Update lobby status
-      lobby.setStatus(LobbyStatus.OPEN)
-      await this.lobbyRepository.update(lobby)
+    lobby.setStatus(LobbyStatus.OPEN)
+    await this.lobbyRepository.update(lobby)
 
-      // Send game ended event
-      await this.eventProvider.sendEvent(EventBridgeType.GAME_ENDED, {
+    await this.eventProvider.sendEvent(EventBridgeType.GAME_ENDED, {
+      data: {
+        gameId: lobby.id,
         lobbyId: input.lobbyId,
         players: input.players,
         winner: winner
           ? {
               username: winner.username,
-              wpm: winner.wpm
+              wpm: winner.wpm,
+              progress: winner.progress
             }
           : undefined,
-        timestamp: new Date().toISOString()
-      })
+        type: GameEventType.GAME_ENDED,
+        timestamp: Date.now()
+      }
+    } as GameEndedDetail)
 
-      logger.info('EndGameUseCase - Successfully processed game end', {
-        lobbyId: input.lobbyId,
-        winner: winner?.username
-      })
-    } catch (error) {
-      logger.error('EndGameUseCase - Error processing game end', {
-        lobbyId: input.lobbyId,
-        error
-      })
-      throw error
-    }
+    logger.info('EndGameUseCase - Successfully processed game end', {
+      lobbyId: input.lobbyId,
+      winner: winner?.username
+    })
   }
 }

@@ -29,11 +29,16 @@ export interface GameStartedEvent extends BaseGameEvent {
   content: string
 }
 
+export interface PlayerResult {
+  username: string
+  wpm: number
+  progress?: number
+}
+
 export interface GameEndedEvent extends BaseGameEvent {
   type: GameEventType.GAME_ENDED
-  winner?: {
-    username: string
-  }
+  players: PlayerResult[]
+  winner?: PlayerResult
   reason?: string
 }
 

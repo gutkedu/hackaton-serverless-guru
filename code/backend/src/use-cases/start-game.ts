@@ -34,20 +34,17 @@ export class StartGameUseCase {
   ) {}
 
   async execute({ lobbyId, userId, difficulty = GameDifficulty.MEDIUM }: StartGameRequest): Promise<void> {
-    // Get the lobby
     const lobby = await this.lobbyRepository.getById(lobbyId)
     if (!lobby) {
       logger.error(`Lobby ${lobbyId} not found`)
       throw new BusinessError('Lobby not found')
     }
 
-    // Optional: Validate if the user is the host
     if (userId && lobby.hostId !== userId) {
       logger.error(`User ${userId} is not the host of lobby ${lobbyId}`)
       throw new BusinessError('Only the host can start the game')
     }
 
-    // Check if the lobby is already in a game
     if (lobby.status === LobbyStatus.IN_GAME) {
       logger.error(`Lobby ${lobbyId} is already in a game`)
       throw new BusinessError('Lobby is already in a game')
@@ -66,7 +63,6 @@ export class StartGameUseCase {
       lobby.status = LobbyStatus.IN_GAME
       await this.lobbyRepository.update(lobby)
 
-      // Create and publish game started event
       const eventMessage: GameStartedEvent = {
         content: randomQuote.content,
         gameId,
