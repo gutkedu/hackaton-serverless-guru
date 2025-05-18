@@ -34,10 +34,10 @@ export default function Home() {
       : 'bg-gradient-to-b from-blue-50 to-white'} p-4 transition-colors duration-300`}>
       <div className={`text-center max-w-2xl px-4 sm:px-6 lg:px-8`}>
         <h1 className={`text-5xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>
-          Welcome to TypeRacer
+          Welcome
         </h1>
         <p className={`text-xl mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} transition-colors duration-300`}>
-          Challenge your typing skills in real-time races with friends!
+          Join our community and start your journey today!
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
@@ -66,8 +66,8 @@ export default function Home() {
           </Link>
         </div>
         <div className={`mt-12 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          <p>Ready to test your typing speed?</p>
-          <p className="mt-2">Join thousands of players and compete in real-time typing races!</p>
+          <p>Ready to get started?</p>
+          <p className="mt-2">Join our community and explore all the features!</p>
         </div>
       </div>
     </div>
