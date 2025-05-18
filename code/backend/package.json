@@ -28,7 +28,7 @@
     "@aws-sdk/lib-dynamodb": "^3.799.0",
     "@aws-sdk/signature-v4": "^3.370.0",
     "@gomomento/sdk": "^1.111.0",
-    "@middy/core": "^6.2.2",
+    "@middy/core": "^6.3.0",
     "@middy/secrets-manager": "^6.2.2",
     "@types/aws-lambda": "^8.10.147",
     "@types/node": "^22.13.10",
