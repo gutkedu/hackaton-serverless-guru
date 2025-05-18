@@ -733,6 +733,44 @@ Resources:
           - '@middy/core'
           - '@aws-sdk/lib-dynamodb'
           - '@aws-sdk/client-dynamodb'
+          
+  GetGameStatisticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetGameStatisticsFunction
+      Description: Returns global game statistics including total games played and top players
+      Handler: game/get-game-statistics.getGameStatisticsHandler
+      Layers:
+        - !Ref NodejsDepsLayer
+        - !Sub arn:aws:lambda:${AWS::Region}:094274105915:layer:AWSLambdaPowertoolsTypeScriptV2:17
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /game/statistics
+            Method: GET
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: !Ref TableName
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: esnext
+        Format: esm
+        Sourcemap: true
+        OutExtension:
+          - .js=.mjs
+        EntryPoints:
+          - src/lambdas/game/get-game-statistics.ts
+        External:
+          - 'zod'
+          - '@aws-lambda-powertools/logger'
+          - '@middy/core'
+          - '@aws-sdk/lib-dynamodb'
+          - '@aws-sdk/client-dynamodb'
 
   ##########################################################################
   #                           Infra Functions                              #

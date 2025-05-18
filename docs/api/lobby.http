@@ -102,3 +102,6 @@ Authorization: Bearer {{idToken}}
 }
 
 
+### Game statistics
+GET {{url}}/game/statistics
+Authorization: Bearer {{idToken}}
