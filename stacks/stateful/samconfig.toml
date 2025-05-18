@@ -4,7 +4,6 @@ stack_name = "hackaton-stateful-resources"
 resolve_s3 = true
 s3_prefix = "hackaton-stateful-resources"
 region = "us-east-1"
-profile = "gutkedu-terraform"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
 parameter_overrides = "MomentoCacheApiKey=\"your-api-key-here\""
