@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: code/backend/package-lock.json
 
@@ -60,25 +60,11 @@ jobs:
         working-directory: stacks/stateful
         run: |
           sam deploy \
-            --stack-name hackaton-stateful-resources \
-            --resolve-s3 \
-            --s3-prefix hackaton-stateful-resources \
-            --region ${{ env.AWS_REGION }} \
-            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
             --parameter-overrides "MomentoCacheApiKey=${{ secrets.MOMENTO_CACHE_API_KEY }}" \
-            --no-confirm-changeset \
-            --no-fail-on-empty-changeset
 
       - name: Deploy Stateless Resources
         if: github.ref == 'refs/heads/main'
         working-directory: stacks/stateless
         run: |
           sam deploy \
-            --stack-name hackaton-stateless-resources \
-            --resolve-s3 \
-            --s3-prefix hackaton-stateless-resources \
-            --region ${{ env.AWS_REGION }} \
-            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
             --parameter-overrides "AppName=\"ServerlessHackaton\"" \
-            --no-confirm-changeset \
-            --no-fail-on-empty-changeset 

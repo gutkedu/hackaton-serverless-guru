@@ -26,8 +26,7 @@
       "version": "v1"
     },
     "dev": {
-      "baseUrl": "https://gz8ep2fj9g.execute-api.us-east-1.amazonaws.com/api",
-      "baseUrlContainer": "https://888xzjnbv6.execute-api.us-east-1.amazonaws.com/api"
+      "baseUrl": "https://gz8ep2fj9g.execute-api.us-east-1.amazonaws.com/api"
     }
   }
 }
