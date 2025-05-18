@@ -3,6 +3,8 @@ import middy from '@middy/core'
 import { makeProcessGameEndedEventUseCase } from '@/use-cases/factories/make-process-game-ended-event.js'
 import { z } from 'zod'
 import { EventBridgeType } from '@/providers/event/events-dto.js'
+import { GameEventType } from '@/core/events/game-events.js'
+import { GameEndedDetail } from '@/providers/event/events-detail.js'
 
 const logger = getLogger()
 
@@ -12,11 +14,17 @@ const playerResultSchema = z.object({
   progress: z.number().optional()
 })
 
-const gameEndedEventDetailSchema = z.object({
+const gameEventDataSchema = z.object({
+  gameId: z.string(),
   lobbyId: z.string(),
   players: z.array(playerResultSchema),
   winner: playerResultSchema.optional(),
-  timestamp: z.string().datetime()
+  type: z.nativeEnum(GameEventType),
+  timestamp: z.number()
+})
+
+const gameEndedEventDetailSchema = z.object({
+  data: gameEventDataSchema
 })
 
 const gameEndedEventSchema = z.object({
@@ -44,7 +52,12 @@ const handler = async (event: GameEndedEventType): Promise<void> => {
   }
 
   const useCase = makeProcessGameEndedEventUseCase()
-  await useCase.execute(parsedEvent.data.detail)
+
+  const gameEndedDetail: GameEndedDetail = {
+    data: parsedEvent.data.detail.data
+  }
+
+  await useCase.execute(gameEndedDetail)
 
   logger.info('Successfully processed gameEnded event')
 }

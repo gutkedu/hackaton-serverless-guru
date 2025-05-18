@@ -1,28 +1,16 @@
 import { GameStatisticsRepository } from '@/repositories/game-statistics-repository.js'
 import { getLogger } from '@/shared/logger/get-logger.js'
 import { BusinessError } from '@/shared/errors/business-error.js'
+import { GameEndedDetail } from '@/providers/event/events-detail.js'
 
 const logger = getLogger()
-
-interface PlayerResultInput {
-  username: string
-  wpm: number
-  progress?: number
-}
-
-interface GameEndedEventDetailInput {
-  lobbyId: string
-  players: PlayerResultInput[]
-  winner?: PlayerResultInput
-  timestamp: string
-}
 
 const MAX_SCOREBOARD_PLAYERS = 15
 
 export class ProcessGameEndedEventUseCase {
   constructor(private readonly gameStatsRepository: GameStatisticsRepository) {}
 
-  async execute(eventDetail: GameEndedEventDetailInput): Promise<void> {
+  async execute({ data }: GameEndedDetail): Promise<void> {
     const newTotalGamesFinished = await this.gameStatsRepository.incrementTotalGamesFinished(1)
     logger.info('Atomically incremented totalGamesFinished', { newTotalGamesFinished })
 
@@ -41,14 +29,14 @@ export class ProcessGameEndedEventUseCase {
       statsEntity.setTotalGamesFinished(newTotalGamesFinished)
     }
 
-    if (eventDetail.players && eventDetail.players.length > 0) {
-      for (const player of eventDetail.players) {
+    if (data.players && data.players.length > 0) {
+      for (const player of data.players) {
         if (player.wpm > 0) {
           statsEntity.updatePlayerOnScoreboard(
             {
               username: player.username,
               wpm: player.wpm,
-              gameTimestamp: eventDetail.timestamp
+              gameTimestamp: data.timestamp.toString()
             },
             MAX_SCOREBOARD_PLAYERS
           )
